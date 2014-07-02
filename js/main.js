@@ -1,5 +1,9 @@
 var API_URL = "http://logintolife.at/hlc-crapi.php?area=";
 
+var options = {
+  showAreaName: true,
+  showFooter: true
+};
 
 $.fn.preload = function() {
   this.each(function(){
@@ -188,6 +192,17 @@ function getIconPosition(angle, border, iconSize) {
   var left = r + x + xPad - iconSize/2;
   var top = r - y - yPad - iconSize/2;
   return {'left':left, 'top':top};
+}
+
+function placeObjects2() {
+  var buffer = 1.3;
+  var object_area = $('.'+size).height();
+  var min_x = 0;
+  var max_x = winWidth - buffer*object_area;
+  var min_y = $('#header').height();
+  var max_y = winHeight - object_area*buffer - $('#footer').height() - 50;
+  var padding_buffer = object_area / 6;
+  var max_tries = 100;
 }
 
 function placeObjects() {
@@ -618,6 +633,9 @@ function instrumentIcons() {
 }
 
 function initObjects() {
+
+  var options = window.options || {};
+
   console.log('INITIALIZING');
   placeObjects();
   if (loading) {
@@ -626,15 +644,25 @@ function initObjects() {
     $('#loading').remove();
     $('#title').show();
 
+
     var identifier = getAreaIdentifier();
     // Set the public access url
     var areaPublicUrl = 'smartpac.es/' + identifier;
     $('#footer .url').text(areaPublicUrl);
 
-    // Set the title
-    var titleIdentifier = capitalizeFirstLetter(identifier);
-    $('#header .space-name').text(titleIdentifier);
-    $('title').text(titleIdentifier + ' Smart Space by reelyActive');
+    if (options.showAreaName) {
+      // Set the title
+      var titleIdentifier = capitalizeFirstLetter(identifier);
+      $('#header .space-name').text(titleIdentifier);
+      $('title').text(titleIdentifier + ' Smart Space by reelyActive');
+    } else {
+      $('#header .space-name').text('This');
+      $('.welcome').hide();
+    }
+
+    if (!options.showFooter) {
+      $('#footer').hide();
+    }
 
     loading = false;
   }
