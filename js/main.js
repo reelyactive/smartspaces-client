@@ -5,6 +5,9 @@ var options = {
   showFooter: true
 };
 
+
+var allWalkers = [];
+
 $.fn.preload = function() {
   this.each(function(){
     $('<img/>')[0].src = this;
@@ -194,72 +197,79 @@ function getIconPosition(angle, border, iconSize) {
   return {'left':left, 'top':top};
 }
 
-function placeObjects2() {
+//+ Jonas Raoni Soares Silva
+//@ http://jsfromhell.com/array/shuffle [v1.0]
+function shuffle(o){ //v1.0
+    for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+    return o;
+};
+
+function placeObjectsAtSize(sizeId) {
+  size = sizes[sizeId];
+  changeAllPersonsSize(size);
+  window.sizeIndex = sizeId;
+
   var buffer = 1.3;
-  var object_area = $('.'+size).height();
+  var size = sizes[sizeId];
+  var objectSize = sizeWidths[sizeId] * 1.4;
   var min_x = 0;
-  var max_x = winWidth - buffer*object_area;
+  var max_x = winWidth - objectSize;
   var min_y = $('#header').height();
-  var max_y = winHeight - object_area*buffer - $('#footer').height() - 50;
-  var padding_buffer = object_area / 6;
+  var max_y = winHeight - objectSize*buffer - $('#footer').height();
+  var padding_buffer = objectSize / 6;
   var max_tries = 100;
+
+  var middleX = (min_x + max_x) / 2;
+  var middleY = (min_y + max_y) / 2;
+
+  var maxRows = Math.ceil((max_y - min_y) / objectSize);
+  var maxColumns = Math.ceil((max_x - min_x) / objectSize);
+  var middleY = Math.round(maxRows/2);
+  var middleX = Math.round(maxColumns/2);
+
+  var maxObjects =  maxColumns * maxRows;
+
+  var persons = $('.person');
+  if (persons.length > maxRows * maxColumns) return false;
+  console.log("object area", objectSize);
+
+  var orderingArray = persons.toArray().concat(new Array(maxObjects - persons.length));
+  shuffle(orderingArray);
+
+  var leftOffset = 0;
+  var topOffset = min_y + 20;
+
+  for(var i = 0; i < orderingArray.length; i++) {
+    var person = $(orderingArray[i]);
+    var x = i % maxColumns;
+    var y = Math.floor(i / maxColumns);
+    person.css({left: x * objectSize + leftOffset, top: y * objectSize + topOffset , padding: padding_buffer});
+  }
+
+  return true;
+
 }
 
 function placeObjects() {
-  var buffer = 1.3;
-  var object_area = $('.'+size).height();
-  var min_x = 0;
-  var max_x = winWidth - buffer*object_area;
-  var min_y = $('#header').height();
-  var max_y = winHeight - object_area*buffer - $('#footer').height() - 50;
-  var padding_buffer = object_area / 6;
-  var max_tries = 100;
-  //var padding_buffer = 0;
-
-  var tries = 0;
-  do {
-    $('.person').each(function() {
-      var rand_x=0;
-      var rand_y=0;
-      rand_x = Math.round(min_x + ((max_x - min_x)*(Math.random() % 1)));
-      rand_y = Math.round(min_y + ((max_y - min_y)*(Math.random() % 1)));
-      $(this).css({left: rand_x, top: rand_y, padding: padding_buffer});
-    });
-    tries = tries + 1;
-  } while(check_overlap(tries));
-  
-  console.log(tries + ' TRIES!');
-  if (tries > max_tries) {
-    sizeIndex = sizeIndex + 1;
-    old_size = size;
-    size = sizes[sizeIndex];
-    console.log('changing to ' + size);
-    $('.person').each(function() {
-      $(this).removeClass(old_size);
-      $(this).addClass(size)
-    });
-    placeObjects();
+  for (var sizeIndex = 0; sizeIndex < sizes.length; sizeIndex++) {
+    if (placeObjectsAtSize(sizeIndex)) return;
   }
-  
-  function check_overlap(tries) {
-    if (tries > max_tries) {
-      console.log('too many tries');
-      return false;
-    }
-    var total_collisions = 0;
-    $('.person').each(function() {
-      var collisions = $(this).collision('.person:not(#'+this.id+'), .avoid');
-      var label_collisions = $('.label', $(this)).collision('.person:not(#'+this.id+'), .avoid');
-      total_collisions = total_collisions + collisions.length + label_collisions.length;
-    });
-    //console.log(total_collisions);
-    if (total_collisions > 0) {
-      return true;
-    } else {
-      return false;
-    }
-  }
+  console.log("Could not place properly");
+  placeObjectsAtSize(sizes.length);
 }
+
+function spiralCoordinates(i) {
+  if (i == 0) return [0, 0];
+
+}
+
+function changeAllPersonsSize(size) {
+    $('.person').each(function() {
+      $(this).removeClass(sizes.join(' '));
+      $(this).addClass(size);
+    });
+}
+
 
 function revealObjects() {
   $('.person').each(function() {
