@@ -7,6 +7,13 @@ $.fn.preload = function() {
   });
 }
 
+function getParam(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -26,8 +33,8 @@ String.prototype.parseUsername = function() {
 
 String.prototype.parseHashtag = function() {
 	return this.replace(/[#]+[A-Za-z0-9-_]+/g, function(t) {
-		var tag = t.replace("#","%23")
-		return '<a href="http://search.twitter.com/search?q='+tag+'" target="_blank">'+t+'</a>';
+		var tag = t.replace("#","")
+		return '<a href="http://twitter.com/hashtag/'+tag+'" target="_blank">'+t+'</a>';
 	});
 };
 
@@ -75,7 +82,7 @@ function parseTwitterDate(tdate) {
     if (diff < 604800) {return Math.round(diff / 86400) + " days ago";}
     if (diff <= 777600) {return "1 week ago";}
     if (diff <= 777600*2) {return "2 weeks ago";}
-    if (diff <= 777600*3) {return "3 week ago";}
+    if (diff <= 777600*3) {return "3 weeks ago";}
     if (diff <= 2629743) {return "1 month ago";}
     if (diff <= 2629743*2) {return "2 months ago";}
     if (diff <= 2629743*3) {return "3 months ago";}
@@ -232,7 +239,7 @@ function placeObjects() {
       return false;
     }
     var total_collisions = 0;
-    $('.person').each(function() {
+    $('.person:not(.dummy)').each(function() {
       var collisions = $(this).collision('.person:not(#'+this.id+'), .avoid');
       var label_collisions = $('.label', $(this)).collision('.person:not(#'+this.id+'), .avoid');
       total_collisions = total_collisions + collisions.length + label_collisions.length;
@@ -259,27 +266,30 @@ function setBackground() {
   $('body').css('background-position', '0% '+dayFraction+'%');
 }
 
-function addPerson(id, info) {
-  if (info.firstName != 'Notman') {
-    var person = $('.dummy').clone();
-    var name = info.firstName + ' ' + info.lastName;
-    var company = info.companyName;
-    person.removeClass('dummy');
-    person.addClass('person');
-    person.attr('id', id);
-    if (info.portraitImageUrl != undefined) { person.css('background-image', 'url('+info.portraitImageUrl+')'); }
-    person.data('name', name);
-    if (info.twitterPersonalScreenName) { person.data('twitter', info.twitterPersonalScreenName); }
-    if (info.linkedInPublicUrl) { person.data('linkedin', info.linkedInPublicUrl); }
-    if (info.companyLogoUrl) { person.data('company-logo', info.companyLogoUrl); }
-    if (info.companyUrl) { person.data('company-link', info.companyUrl); }
-    $('.name', person).html(name);
-    $('.company', person).html(company);
-    people.push(person);
-    population++;
-    return person;
+function addTwitterUser(username) {
+  if ($.inArray(username, twitters) < 0) {
+    twitters.push(username);
   }
-  return false;
+}
+
+function addPerson(id, info) {
+  var person = $('#person-dummy').clone();
+  var name = info.firstName + ' ' + info.lastName;
+  var company = info.companyName;
+  person.removeClass('dummy');
+  person.addClass('person');
+  person.attr('id', id);
+  if (info.portraitImageUrl != undefined) { person.css('background-image', 'url('+info.portraitImageUrl+')'); }
+  person.data('name', name);
+  if (info.twitterPersonalScreenName) { person.data('twitter', info.twitterPersonalScreenName); }
+  if (info.linkedInPublicUrl) { person.data('linkedin', info.linkedInPublicUrl); }
+  if (info.companyLogoUrl) { person.data('company-logo', info.companyLogoUrl); }
+  if (info.companyUrl) { person.data('company-link', info.companyUrl); }
+  $('.name', person).html(name);
+  $('.company', person).html(company);
+  people.push(person);
+  population++;
+  return person;
 }
 
 function resetPeople() {
@@ -527,12 +537,8 @@ function instrumentIcons() {
             $('#overlay .bio').html(linkifyTwitter(bio));
             $('.tweet').remove();
             $.each(data, function(key, tweet) {
-              thisTweet = getDummy('tweet');
-              $('.content', thisTweet).html(linkifyTwitter(tweet.text));
-              $('.timestamp', thisTweet).html(parseTwitterDate(tweet.created_at));
-              var permalink = 'https://twitter.com/'+handle+'/status/'+tweet.id_str;
-              $('.timestamp', thisTweet).attr('href', permalink);
-              thisTweet.appendTo($('#overlay .twitter'));
+              var tweetDiv = generateTweetDiv(tweet, handle);
+              tweetDiv.appendTo($('#overlay .twitter'));
             });
             openOverlay();
           } else {
@@ -617,14 +623,16 @@ function instrumentIcons() {
   });
 }
 
-function initObjects() {
-  console.log('INITIALIZING');
-  placeObjects();
+function hideLoader() {
   if (loading) {
     $('#header').show();
     $('#footer').show();
     $('#loading').remove();
     $('#title').show();
+    
+    if (view=='place') {
+      $('#place').show();
+    }
 
     var identifier = getAreaIdentifier();
     // Set the public access url
@@ -632,12 +640,17 @@ function initObjects() {
     $('#footer .url').text(areaPublicUrl);
 
     // Set the title
-    var titleIdentifier = capitalizeFirstLetter(identifier);
-    $('#header .space-name').text(titleIdentifier);
-    $('title').text(titleIdentifier + ' Smart Space by reelyActive');
+    $('.space-name').text(placeInfo.displayName);
+    $('title').text(placeInfo.displayName + ' Smart Space by reelyActive');
 
     loading = false;
   }
+}
+
+function initObjects() {
+  console.log('INITIALIZING');
+  placeObjects();
+  hideLoader();
   revealObjects();
   startWalkers();
   setLabelTops();
@@ -710,6 +723,601 @@ function refresh() {
   });
 }
 
+function remainingSocialSpace() {
+  var socialSceneDiv = $('#social-scene-container');
+  var currentHeight = socialSceneDiv.height() + socialSceneDiv.offset().top + $('#footer').height() + 10;
+  var remainder = $(window).height() - currentHeight;
+  return remainder;
+}
+
+function socialSceneFull() {
+  if (remainingSocialSpace() > 0) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
+function getBoxNum(box) {
+  return parseInt(box.attr('id').split('social-item-')[1]);
+}
+
+function getAdjacentBoxes(box) {
+  var num = getBoxNum(box);
+  var adjacentNums = [num - boxesPerRow, num + boxesPerRow, num - 1, num + 1];
+  console.log(adjacentNums);
+  var adjacentBoxes = [];
+  $.each(adjacentNums, function(index, thisNum) {
+    if (thisNum > 0 && thisNum <= numBoxes) {
+      adjacentBoxes.push($('#social-item-'+thisNum));
+    }
+  });
+  return adjacentBoxes;
+}
+
+function isAdjacentColor(box, color) {
+  var adjacentBoxes = getAdjacentBoxes(box);
+  var colorFound = false;
+  console.log('CHECKING COLOR:' + color);
+  $.each(adjacentBoxes, function(index, thisBox) {
+    if (thisBox.hasClass(color)) {
+      colorFound = true;
+    }
+  });
+  return colorFound;
+}
+
+function randomElement(items) {
+  return items[Math.floor(Math.random()*items.length)];
+}
+
+function colorSocialBox(box) {
+  if (box.hasClass('photo')) {
+    return box;
+  }
+  
+  var color = null;
+  var unusedColors = socialColors.slice();
+  
+  shownBoxes().each(function() {
+    if ($(this).data().hasOwnProperty('color')) {
+      
+      Array.prototype.remove= function(){
+        var what, a= arguments, L= a.length, ax;
+        while(L && this.length){
+          what= a[--L];
+          while((ax= this.indexOf(what))!= -1){
+            this.splice(ax, 1);
+          }
+        }
+        return this;
+      }
+      
+      unusedColors.remove($(this).data('color'));
+    }
+  });
+  
+  if (unusedColors.length > 0) {
+    color = randomElement(unusedColors);
+  } else {
+    do {
+     color = randomElement(socialColors); 
+    } while (isAdjacentColor(box, color));
+  }
+
+  box.addClass(color);
+  box.data('color', color);
+  return box;
+}
+
+function removeBoxColors(box) {
+  $.each(socialColors, function(index, color) {
+    box.removeClass(color);
+  });
+  return box;
+}
+
+function colorSocialBoxes() {
+  shownBoxes().each(function() {
+    colorSocialBox($(this));
+  });
+}
+
+function makeNewBox() {
+  var box = $('.social-item.dummy').clone();
+  box.removeClass('dummy');
+  return box;
+}
+
+function sizeNewsArea() {
+  var newsWidth =
+    $(window).width() - $('#trending-container:visible').outerWidth(true) - $('#social-scene-container').outerWidth(true) - 35;
+  $('#news-container').css({width: newsWidth+'px'});
+  var newsfeedHeight = 
+    $('#social-scene-container').height() - $('#noticeboard-container').outerHeight(true) - $('#newsfeed-container > .header').outerHeight(true) - 15;
+  $('#newsfeed').css({height: newsfeedHeight+'px'});
+}
+
+function emptyNoticesMessage(text) {
+  $('#notices').empty();
+  $('#notices').addClass('empty');
+  $('#notices').html('<div class="notice">'+text+'</div>');
+}
+
+function postNotice(notice) {
+  $('#notice-form').hide();
+  emptyNoticesMessage('Posting notice...');
+  $('.button', '#noticeboard-container').hide();
+  $('#notices').show();
+  $.post('/'+placeName+'/notices/new', {
+	  message: notice
+	}, function(data) {
+	  insertNotices(data);
+	  $('.button.add', '#noticeboard-container').show();
+	});
+}
+
+function clearNotices() {
+  emptyNoticesMessage('No notices to show.')
+}
+
+function insertNotices(notices) {
+  if (notices.length > 0) {
+    $('#notices').removeClass('empty');
+    $('#notices').empty();
+    $.each(notices, function(id, notice) {
+      var noticeDiv = $('<div class="notice"></div>');
+      noticeDiv.html(notice.message);
+      $('#notices').append(noticeDiv);
+    });
+    cycleNotices();
+  } else {
+    clearNotices();
+  }
+}
+
+function fadeNotice(notice) {
+  var persist = 6; // time in seconds to show each notice
+  if (notice.next().length > 0) {
+    var next = notice.next();
+  } else {
+    var next = $('.notice').first();
+  }
+  notice.delay(persist * 1000).fadeOut(500, function() {
+    next.fadeIn(500, function() {
+      notice = next;
+      fadeNotice(notice);
+    });
+  });
+}
+
+function cycleNotices() {
+  var first = $('.notice').first();
+  first.show();
+  if (first.next().length > 0) {
+    fadeNotice(first);
+  }
+}
+
+function showNotices() {
+  $('.button.add', '#noticeboard-container').click(function() {
+    $('#notices').hide();
+    $('#notice-form').val("").show().focus();
+    $(this).hide();
+    $('.button.cancel', '#noticeboard-container').show();
+    $('.button.post', '#noticeboard-container').show();
+  });
+  
+  $('.button.cancel', '#noticeboard-container').click(function() {
+    $('#notice-form').hide();
+    $('#notices').show();
+    $(this).hide();
+    $('.button.post', '#noticeboard-container').hide();
+    $('.button.add', '#noticeboard-container').show();
+  });
+  
+  $('.button.post', '#noticeboard-container').click(function() {
+    postNotice($('#notice-form').val());
+  });
+  
+  $('#notice-form').keydown(function(e) {
+    if (e.keyCode == 13) {
+      if (!e.shiftKey) {
+        postNotice($(this).val());
+      }
+    }
+  });
+  
+  $.getJSON('/'+placeName+'/notices', function(data) {
+    if (data.length == 0) {
+      clearNotices();
+    } else {
+      insertNotices(data);
+    }
+  });
+}
+
+function sizeLayout() {
+  var remainder = remainingSocialSpace();
+  var currentBoxSize = $('.social-item').height();
+  numBoxes = shownBoxes().length;
+  var boxIncrease = remainder / numRows;
+  var newBoxSize = currentBoxSize + boxIncrease;
+  $('.social-item').css({height: newBoxSize+'px', width: newBoxSize+'px'});
+  var socialSceneWidth = boxesPerRow * (newBoxSize + 20);
+  $('#social-scene-container').css({width: socialSceneWidth+'px'});
+  sizeNewsArea();
+}
+
+function placeSocialBoxes() {
+  var windowW = $(window).width();
+  var windowH = $(window).height();
+  var rows, cols;
+  if (windowW > 1300 && windowH > 800) {
+    rows = 3; cols = 4;
+  } else if (windowW > 1150 && windowH > 700) {
+    rows = 3; cols = 3;
+  } else if (windowW > 1050 && windowH > 500) {
+    rows = 2; cols = 3;
+  } else {
+    rows = 2; cols = 2;
+  }
+  numRows = rows;
+  boxesPerRow = cols;
+  var k = 1;
+  for (i = 0; i < numRows; i++) {
+    var row = $('<div class="row"></div>');
+    for (j = 0; j < boxesPerRow; j++) {
+      var newBox = makeNewBox();
+      newBox.attr('id', 'social-item-'+k);
+      newBox.appendTo(row);
+      k++;
+    }
+    row.appendTo('#social-scene');
+  }
+  numBoxes = k;
+  sizeLayout();
+}
+
+function getBox(boxNum) {
+  return $('#social-item-'+boxNum, '#social-scene');
+}
+
+function calculateTweetWeight(tweet) {
+  var retweeterFollowers = 0;
+  var boost = 1;
+  if (tweet.hasOwnProperty('retweeted_status')) {
+    var retweeterFollowers = tweet.user.followers_count;
+  }
+  if (tweet.entities.hasOwnProperty('media') && tweet.entities.media[0].type == 'photo') {
+    boost = boost + visualBoost;
+  }
+  var favs = tweet.favorite_count;
+  var rts = tweet.retweet_count;
+  var followers = tweet.user.followers_count + (retweeterFollowers / 2) + 50;
+  var weight = (favs + (3*rts) + 0.1) / followers;
+  return weight * 1000 * boost;
+}
+
+function cloneList(list) {
+  var newList = jQuery.extend(true, {}, list);
+  return newList;
+}
+
+function pullHashtags(tweet) {
+  if (tweet.entities.hasOwnProperty('hashtags')) {
+    $.each(tweet.entities.hashtags, function(index, hashtag) {
+      hashtags.push(hashtag.text);
+    });
+  }
+}
+
+function sortHashtags() {
+  var histogramMap = {};
+  for(var i=0, len=hashtags.length; i<len; i++){
+    var key = hashtags[i];
+    histogramMap[key] = (histogramMap[key] || 0) + 1;
+  }
+  var histogram = [];
+  for(key in histogramMap) histogram.push({key: key, freq: histogramMap[key]});
+  histogram.sort(function(a,b){return b.freq - a.freq});
+  sortedHashtags = histogram;
+}
+
+function fillHashtags() {
+  var minimum = 5;
+  var numTags = 10;
+  if (sortedHashtags.length >= minimum) {
+    $('#trending-container').show();
+    $('#trending').empty();
+    $(sortedHashtags).slice(0, numTags).each(function(index, object) {
+      var hashtag = object.key;
+      var hashtagDiv = $('.trending-topic.dummy').clone();
+      hashtagDiv.removeClass('dummy');
+      $('.text', hashtagDiv).attr('href', 'http://twitter.com/hashtag/'+hashtag);
+      $('.tag', hashtagDiv).html(hashtag);
+      $('#trending').append(hashtagDiv);
+    });
+  } else {
+    $('#trending-container').hide();
+  }
+  sizeNewsArea();
+}
+
+function decreaseFont(box) {
+  var fontSize = parseInt(box.css('font-size'));
+  var userPadding = parseInt($('.from', box).css('padding'));
+  var contentPadding = parseInt($('.content', box).css('padding'));
+  fontSize = fontSize - 1 + 'px';
+  if (userPadding > 3) {
+    userPadding = userPadding - 1 + 'px';
+  }
+  if (contentPadding > 4) {
+    contentPadding = contentPadding - 2 + 'px';
+  }
+  box.css({'font-size': fontSize, 'line-height': fontSize});
+  $('.from, .via', box).css({'padding': userPadding});
+  $('.content', box).css({'padding': contentPadding});
+}
+
+function contentOverflow(box) {
+  var buffer = 20;
+  var availableArea = box.height() - ($('.from', box).height() * 2) - buffer;
+  var content = $('.content', box);
+  var from = $('.from', box);
+  var via = $('.via', box);
+  if (content.height() > availableArea
+   || content.outerWidth() > box.width()+2
+   || from.outerWidth() > box.width()
+   || via.outerWidth() > box.width())
+  {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function tailorSocialBox(box) {
+  while (contentOverflow(box)) {
+    console.log('DECREASING FONT');
+    decreaseFont(box);
+  }
+}
+
+function insertTweet(box, tweetObject) {
+  var tweet = tweetObject['data'];
+  console.log(tweetObject);
+  if (tweet.hasOwnProperty('retweeted_status')) {
+    var from = tweet.retweeted_status.user.screen_name;
+    var text = tweet.retweeted_status.text;
+    var tweetID = tweet.retweeted_status.id_str;
+    var via = tweet.user.screen_name
+    $('.via .user', box).html(linkifyTwitter('@'+via));
+    $('.via', box).show();
+    box.addClass('retweet');
+  } else {
+    var from = tweet.user.screen_name;
+    var text = tweet.text;
+    var tweetID = tweet.id_str;
+  }
+  $('.from', box).html(linkifyTwitter('@'+from));
+  $('.content', box).html(linkifyTwitter(text));
+  box.attr('href', 'https://twitter.com/'+from+'/status/'+tweetID);
+  box.removeClass('photo');
+  
+  if (tweet.entities.hasOwnProperty('media')) {
+    $.each(tweet.entities.media, function(index, element) {
+      if (element.type == 'photo') {
+        box.css({backgroundImage: 'url('+element.media_url+')'});
+        box.addClass('photo');
+        box = removeBoxColors(box);
+        box.removeData('color');
+      }
+    });
+  }
+  
+  box.addClass('filled');
+  box.data('tweet-id', tweet.id);
+  return box;
+}
+
+function shownBoxes() {
+  return $('.social-item', '#social-scene');
+}
+
+function numBoxesFilled() {
+  return $('.social-item.filled', '#social-scene').length;
+}
+
+function isShown(tweet) {
+  var found = false;
+  shownBoxes().each(function() {
+    if ($(this).data('tweet-id') == tweet['data'].id) {
+      found = true;
+      console.log('found');
+    }
+  });
+  return found;
+}
+
+function replenishTweetsLeft() {
+  if (tweetsLeft.length == 0) {
+    console.log('RE-CLONING');
+    tweetsLeft = cloneList(tweets);
+  }
+}
+
+function getMoreTweets(numTweets) {
+  console.log('NUMBER OF TWEETS: ' + tweets.length);
+  console.log('NUMBER OF TWEETS LEFT: ' + tweetsLeft.length);
+  replenishTweetsLeft();
+  if (tweets.length < numTweets) {
+    numTweets = tweets.length;
+  }
+  if (numTweets == 1) {
+    var tweet = null;
+    do {
+      tweet = tweetsLeft.pop(numTweets)[0];
+      replenishTweetsLeft();
+    } while (isShown(tweet));
+    return [tweet];
+  } else {
+    return tweetsLeft.pop(numTweets);
+  }
+}
+
+function freshTweet() {
+  var randomBoxNum = Math.floor(Math.random() * numBoxes) + 1;
+  var oldBox = getBox(randomBoxNum);
+  var newBox = makeNewBox();
+  var tweet = getMoreTweets(1)[0];
+  
+  newBox.attr('id', oldBox.attr('id'));
+  newBox = insertTweet(newBox, tweet);
+  newBox = colorSocialBox(newBox);
+  newBox.css({opacity: 0});
+  oldBox.fadeTo(500, 0, function() {
+    oldBox.replaceWith(newBox);
+    tailorSocialBox(newBox);
+    newBox.fadeTo(500, 1.0);
+  });
+}
+
+function processCachedTweets(data, username) {
+  if (data.hasOwnProperty(username)) {
+    return data[username]; // server has returned cached data
+  } else {
+    return data;
+  }
+}
+
+function collectTweets() {
+  console.log('Collecting tweets.');
+  $.each(twitters, function(index, username) {
+    $.ajax({
+        type: 'GET',
+        url: 'twitter/'+username,
+        dataType: 'json',
+        success: function(data) {
+          var twitterJSON = processCachedTweets(data, username);
+          var i = 0;
+          $.each(twitterJSON, function(index, tweet) {
+            if ($.inArray(tweet.id, tweetIDs) == -1) {
+              var weight = calculateTweetWeight(tweet);
+              tweets.push({'key': tweet.id, 'weight': weight, 'data': tweet});
+              tweetIDs.push(tweet.id);
+              pullHashtags(tweet);
+              i++;
+            }
+          });
+          if (i > 0) console.log('Added ' + i + ' tweets from ' + username + '.');
+        },
+        data: {},
+        async: false
+    });
+  });
+  sortHashtags();
+  fillHashtags();
+  tweetsLeft = cloneList(tweets);
+}
+
+function fillTweets() {
+  console.log(tweetsLeft);
+  var shownTweets = getMoreTweets(numBoxes);
+  var i = 1;
+  $.each(shownTweets, function(index, tweet){
+    var box = getBox(i);
+    console.log('Inserting tweet.');
+    insertTweet(box, tweet);
+    tailorSocialBox(box);
+    colorSocialBox(box);
+    i++;
+  });
+}
+
+function generateTweetDiv(tweet, username) {
+  var tweetDiv = getDummy('tweet');
+  $('.content', tweetDiv).html(linkifyTwitter(tweet.text));
+  $('.timestamp', tweetDiv).html(parseTwitterDate(tweet.created_at));
+  var permalink = 'https://twitter.com/'+username+'/status/'+tweet.id_str;
+  $('.timestamp', tweetDiv).attr('href', permalink);
+  return tweetDiv;
+}
+
+function showNewsFeed() {
+  if (placeInfo.hasOwnProperty('twitter')) {
+    var username = placeInfo.twitter;
+    $.getJSON('twitter/'+username, function(data) {
+      var twitterJSON = processCachedTweets(data, username);
+      if (length(twitterJSON) > 0) {
+        $.each(twitterJSON, function(index, tweet) {
+          var tweetDiv = generateTweetDiv(tweet, username);
+          tweetDiv.appendTo($('#newsfeed'));
+        });
+      } else {
+        // no tweets
+      }
+    });
+  } else {
+    console.log('No official Twitter.');
+  }
+}
+
+function refreshSocial() {
+  if (tweets.length > numBoxesFilled()) {
+    freshTweet();
+  }
+}
+
+function viewButtons() {
+  $('.button[data-view="'+view+'"]', '#footer').addClass('selected');
+  $('.button', '#footer').click(function() {
+    if (!$(this).hasClass('selected')) {
+      $('.button', '#footer').removeClass('selected');
+      $(this).addClass('selected');
+      var newView = $(this).data('view');
+      switchView(newView);
+    }
+  })
+}
+
+function initPlaceView() {
+  placeSocialBoxes();
+  $.getJSON('/'+placeName+'/recent', function(data) {
+    $.each(data, function(index, object) {
+      addTwitterUser(object['twitterPersonalScreenName']);
+    });
+    console.log(twitters);
+    //twitters = ['bogdream'];
+    showNewsFeed();
+    showNotices();
+    collectTweets();
+    fillTweets();
+    var socialRefresher = setInterval(refreshSocial, 5000);
+    var tweetCollector = setInterval(collectTweets, 60000);
+    placeViewInit = true;
+  });
+}
+
+function switchView(newView) {
+  view = newView;
+  $('#people').hide();
+  $('#place').hide();
+  $('#'+view).show();
+  
+  $('body').removeClass();
+  $('body').addClass(view);
+  
+  if (view == 'people') {
+    setBackground();
+  }
+  
+  if (view == 'place') {
+    $('.people').hide();
+    if (!placeViewInit) initPlaceView();
+  }
+}
+
 function getAreaIdentifier() {
   // Identifiers are obtained by slice to remove leading '#' or '/'.
   var identifier = window.location.hash.slice(1);
@@ -719,21 +1327,16 @@ function getAreaIdentifier() {
 }
 
 function getJsonUrl() {
-
   var identifier = getAreaIdentifier();
   if (identifier) {
     return API_URL + identifier.toLowerCase();
   } else {
     return null;
   }
-
 }
 
 $(document).ready(function(){
-  setBackground();
-  var refresher = setInterval(refresh, 60000);
-	
-	sizes = ['big', 'medium', 'small', 'smaller', 'tiny', 'tinier', 'puny'];
+  sizes = ['big', 'medium', 'small', 'smaller', 'tiny', 'tinier', 'puny'];
 	size = '';
 	path = '';
 	sizeWidths = [300, 200, 150, 130, 110, 90, 75];
@@ -744,10 +1347,31 @@ $(document).ready(function(){
 	overlayMode = false;
 	updating = false;
 	blurred = false;
+	placeViewInit = false;
+	
+	view = getParam('view');
+  if (view.length == 0) view = 'people'; // default view
+  
+  $('body').addClass(view);
+  
+  if (view == 'people') {
+    setBackground();
+    var refresher = setInterval(refresh, 60000);
+  }
+	
+	socialColors = ['green', 'red', 'orange', 'purple', 'blue'];
+	twitters = [];
+	tweets = new WeightedList();
+	tweetIDs = [];
+	visualBoost = 30;
+	hashtags = [];
+	sortedHashtags = [];
 	
 	jsonURL = $('body').data('json');
   jsonURL = getJsonUrl();
   console.log('API URL', jsonURL)
+  placeName = getAreaIdentifier();
+  
 	people = [];
   population = 0;
   
@@ -759,10 +1383,23 @@ $(document).ready(function(){
   }
   fadeLoop();
   
+  placeInfo = {};
+  $.getJSON('/'+placeName+'/info', function(data) {
+    $.each(data, function(id, info) {
+      placeInfo[id] = info;
+    });
+  });
+  
+	$.post('/track', {
+	  apiRoot: API_URL,
+	  place: placeName,
+	  attributes: 'twitterPersonalScreenName'
+	});
 	
 	$.getJSON(jsonURL, function(data) {
     $.each(data, function(id, info) {
       addPerson(id, info);
+      console.log('added ' + id);
     });
     
     calculateSize();
@@ -779,8 +1416,13 @@ $(document).ready(function(){
     });
     
     initObjects();
+    hideLoader();
+    viewButtons();
+    
+    if (view == 'place') {
+      initPlaceView();
+    }
   });
-
 });
 
 
@@ -797,4 +1439,5 @@ $(window).focus(function(){
 $(window).resize(function() {
   winWidth = $(window).width();
 	winHeight = $(window).height();
+	sizeLayout();
 });
