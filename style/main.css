@@ -817,7 +817,7 @@ body.mobile .social-item .content {
   padding-bottom: 35px;
 }
 
-.social-item.photo .content {
+.social-item.photo .content, body.mobile .social-item.photo .content {
   background-color: rgba(0, 0, 0, 0.5);
   color: white;
   transform: none;
@@ -825,11 +825,22 @@ body.mobile .social-item .content {
   position: absolute;
   top: auto;
   bottom: 0;
+  padding: 10px;
   text-shadow: 1px 1px black;
+}
+
+body.mobile .social-item.photo .content {
+  top: 0;
+  bottom: auto;
+  padding-top: 35px;
 }
 
 .social-item.photo.retweet .content {
   padding-bottom: 28px !important;
+}
+
+body.mobile .social-item.photo.retweet .content {
+  padding-bottom: 10px !important;
 }
 
 .social-item a {
