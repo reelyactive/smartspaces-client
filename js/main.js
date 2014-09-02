@@ -159,6 +159,7 @@ function generateWalker(walkerObj){
 }
 
 function resumeMotion() {
+  if (mode == 'mobile') return false;
   if (!overlayMode && !updating) {
     $.each(allWalkers, function(index, thisWalker) {
       thisWalker.resume();
@@ -168,6 +169,7 @@ function resumeMotion() {
 }
 
 function stopMotion() {
+  if (mode == 'mobile') return false;
   $.each(allWalkers, function(index, thisWalker) {
     thisWalker.pathAnimator.stop();
   });
@@ -175,6 +177,7 @@ function stopMotion() {
 }
 
 function startWalkers() {
+  if (mode == 'mobile') return false;
   allWalkers = [];
   $('.person').each(function() {
     var thisWalker = generateWalker($(this)[0]);
@@ -197,60 +200,78 @@ function getIconPosition(angle, border, iconSize) {
   return {'left':left, 'top':top};
 }
 
-function placeObjects() {
-  var buffer = 1.3;
-  var object_area = $('.'+size).height();
-  var min_x = 0;
-  var max_x = winWidth - buffer*object_area;
-  var min_y = $('#header').height();
-  var max_y = winHeight - object_area*buffer - $('#footer').height() - 50;
-  var padding_buffer = object_area / 6;
-  var max_tries = 100;
-  //var padding_buffer = 0;
+//+ Jonas Raoni Soares Silva
+//@ http://jsfromhell.com/array/shuffle [v1.0]
+function shuffle(o){ //v1.0
+    for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+    return o;
+};
 
-  var tries = 0;
-  do {
-    $('.person').each(function() {
-      var rand_x=0;
-      var rand_y=0;
-      rand_x = Math.round(min_x + ((max_x - min_x)*(Math.random() % 1)));
-      rand_y = Math.round(min_y + ((max_y - min_y)*(Math.random() % 1)));
-      $(this).css({left: rand_x, top: rand_y, padding: padding_buffer});
-    });
-    tries = tries + 1;
-  } while(check_overlap(tries));
-  
-  console.log(tries + ' TRIES!');
-  if (tries > max_tries) {
-    sizeIndex = sizeIndex + 1;
-    old_size = size;
-    size = sizes[sizeIndex];
-    console.log('changing to ' + size);
-    $('.person').each(function() {
-      $(this).removeClass(old_size);
-      $(this).addClass(size)
-    });
-    placeObjects();
+function placeObjectsAtSize(sizeId) {
+  size = sizes[sizeId];
+  changeAllPersonsSize(size);
+  window.sizeIndex = sizeId;
+
+  var buffer = 1.3;
+  var size = sizes[sizeId];
+  var objectSize = sizeWidths[sizeId] * 1.4;
+  var min_x = 0;
+  var max_x = winWidth - objectSize;
+  var min_y = $('#header').height();
+  var max_y = winHeight - objectSize*buffer - $('#footer').height();
+  var padding_buffer = objectSize / 6;
+  var max_tries = 100;
+
+  var middleX = (min_x + max_x) / 2;
+  var middleY = (min_y + max_y) / 2;
+
+  var maxRows = Math.ceil((max_y - min_y) / objectSize);
+  var maxColumns = Math.ceil((max_x - min_x) / objectSize);
+  var middleY = Math.round(maxRows/2);
+  var middleX = Math.round(maxColumns/2);
+
+  var maxObjects =  maxColumns * maxRows;
+
+  var persons = $('.person');
+  if (persons.length > maxRows * maxColumns) return false;
+  console.log("object area", objectSize);
+
+  var orderingArray = persons.toArray().concat(new Array(maxObjects - persons.length));
+  shuffle(orderingArray);
+
+  var leftOffset = 0;
+  var topOffset = min_y + 20;
+
+  for(var i = 0; i < orderingArray.length; i++) {
+    var person = $(orderingArray[i]);
+    var x = i % maxColumns;
+    var y = Math.floor(i / maxColumns);
+    person.css({left: x * objectSize + leftOffset, top: y * objectSize + topOffset , padding: padding_buffer});
   }
-  
-  function check_overlap(tries) {
-    if (tries > max_tries) {
-      console.log('too many tries');
-      return false;
-    }
-    var total_collisions = 0;
-    $('.person:not(.dummy)').each(function() {
-      var collisions = $(this).collision('.person:not(#'+this.id+'), .avoid');
-      var label_collisions = $('.label', $(this)).collision('.person:not(#'+this.id+'), .avoid');
-      total_collisions = total_collisions + collisions.length + label_collisions.length;
-    });
-    //console.log(total_collisions);
-    if (total_collisions > 0) {
-      return true;
-    } else {
-      return false;
-    }
+
+  return true;
+
+}
+
+function placeObjects() {
+  if (mode == 'mobile') return false;
+  for (var sizeIndex = 0; sizeIndex < sizes.length; sizeIndex++) {
+    if (placeObjectsAtSize(sizeIndex)) return;
   }
+  console.log("Could not place properly");
+  placeObjectsAtSize(sizes.length);
+}
+
+function spiralCoordinates(i) {
+  if (i == 0) return [0, 0];
+
+}
+
+function changeAllPersonsSize(size) {
+    $('.person').each(function() {
+      $(this).removeClass(sizes.join(' '));
+      $(this).addClass(size);
+    });
 }
 
 function revealObjects() {
@@ -328,6 +349,7 @@ function setHovers() {
 	  $(this).data('origX', $(this).css('left'));
 	  $(this).data('origY', $(this).css('top'));
 	  $(this).data('origBorder', $(this).css('border-top-width'));
+	  $(this).data('origMarginBottom', $(this).css('margin-bottom'));
 	  
 	  var label = $('.label', this);
 	  var increase, newlabelTop, iconSize;
@@ -344,13 +366,25 @@ function setHovers() {
 	    paddingBottom: -labelShifts[sizeIndex]+'px'
 	  }, 300);
 	  label.css({textShadow: '0px 0px 3px rgba(0, 0, 0, 0.5)'});
+	  
+	  var hoverAnimation;
+	  if (mode == 'mobile') {
+	    hoverAnimation = {
+	      borderWidth: newBorder+'px',
+        top: '-='+increase+'px',
+        marginBottom: '-='+(increase*2)+'px'
+	    };
+	  } else {
+	    hoverAnimation = {
+	      borderWidth: newBorder+'px',
+  	    top: '-='+increase+'px',
+  	    left: '-='+increase+'px'
+	    };
+	  }
 
-	  $(this).animate({
-	    borderWidth: newBorder+'px',
-	    top: '-='+increase+'px',
-	    left: '-='+increase+'px'
-	  }, 300, function() {
+	  $(this).animate(hoverAnimation, 300, function() {
 	    if ($(this).hasClass('hover')) {
+	      console.log('placing icons');
 	      var twitterAngle = 0;
   	    if ($(this).data('twitter')) {
   	      twitterAngle = 30;
@@ -368,12 +402,15 @@ function setHovers() {
     	    var linkedinAngle = twitterAngle + 30;
     	    var linkedinPos = getIconPosition(linkedinAngle, newBorder, iconSize);
     	    var linkedin = $('.linkedin-icon', $(this));
+    	    linkedin.data('url', $(this).data('linkedin'));
     	    linkedin.css({width: iconSize+'px', height: iconSize+'px', left: linkedinPos.left+'px', top: linkedinPos.top+'px', borderRadius: iconSize+'px'});
           linkedin.fadeIn(300);
         }
       }
 	  });
+	  console.log('done hover');
 	}, function() {
+	  console.log('unhover');
 	  if (overlayMode) return false;
 	  
     $(this).finish();
@@ -385,7 +422,13 @@ function setHovers() {
 
 	  resumeMotion();
 
-	  $(this).css({borderWidth: borders[sizeIndex] + 'px'});
+    var cssReset;
+    if (mode == 'mobile') {
+      cssReset = {borderWidth: borders[sizeIndex] + 'px', top: 0, left: 0, marginBottom: $(this).data('origMarginBottom')};
+    } else {
+      cssReset = {borderWidth: borders[sizeIndex]};
+    }
+	  $(this).css(cssReset);
 
     resetLabel($(this));
 	});
@@ -395,50 +438,78 @@ function hideOverlay(person) {
   console.log('hiding overlay');
   person.removeClass('hover');
   $('.icon', person).removeClass('active');
-  $('.person:not(#'+person.attr('id')+')').fadeTo(500, 1.0);
   $('#title').fadeTo(500, 1.0);
   $('#overlay').fadeOut(500, function() {
     $('.tweet').remove();
     $('.job').remove();
     //$('.degree').remove();
+    $('#overlay').css({width: '300px', opacity: 0.8});
   });
   $('#arrow').fadeOut(500);
   $('.icon', person).fadeOut(300);
   resetLabel(person);
-  person.animate({left: person.data('origX'), top: person.data('origY'), borderWidth: person.data('origBorder')}, 300, function() {
-    resumeMotion();
-  });
+  var cssReset;
+  if (mode == 'mobile') {
+    var centeredPos = person.offset().left + person.outerWidth() - leftOverhang;
+    $('#footer').show();
+    $('.person:not(#'+person.attr('id')+')').show();
+    cssReset = {position: 'relative', top: 0, left: 0, borderWidth: person.data('origBorder'), marginBottom: person.data('origMarginBottom')};
+    person.css(cssReset);
+  } else {
+    $('.person:not(#'+person.attr('id')+')').fadeTo(500, 1.0);
+    cssReset = {left: person.data('origX'), top: person.data('origY'), borderWidth: person.data('origBorder')};
+    person.animate(cssReset, 300, function() {
+      resumeMotion();
+    });
+  }
   $(document).unbind('click');
   overlayMode = false;
 }
 
-function setOverlayDimensions() {
-  overlayHeight = winHeight - $('#header').height() - $('#footer').height() - 20;
-  overlayTop = $('#header').height() + 10;
-  overlayWidth = 300;
+function setOverlayDimensions(overlayType) {
+  getWindowDimensions();
+  if (mode == 'mobile') {
+    overlayHeight = winHeight - 20;
+    overlayTop = 10;
+    overlayWidth = winWidth - $('#arrow').offset().left - $('#arrow').width() - 10;
+  } else {
+    overlayHeight = winHeight - $('#header').height() - $('#footer').height() - 20;
+    overlayTop = $('#header').height() + 10;
+    overlayWidth = 300;
+    console.log('OVERLAY TYPE');
+    console.log(overlayType);
+    if (overlayType == 'fullscreen') overlayWidth = winWidth - 200;
+  }
 }
 
-function openOverlay() {
-  setOverlayDimensions();
+function openOverlay(overlayType) {
+  setOverlayDimensions(overlayType);
   var scrollable = true;
-  var contentHeight = $('#overlay .'+overlayType).height() + $('#overlay .header').height() + 15;
-  var minHeight = 90;
-  if (contentHeight < minHeight) { contentHeight = minHeight; }
-  if (contentHeight < overlayHeight) {
-    var contentTop = arrowTop + 35 - (contentHeight/2);
-    var dip = (overlayTop + overlayHeight) - (contentTop + contentHeight);
-    if (dip < 0) { contentTop = contentTop + dip; }
-    if (contentTop > overlayTop) { overlayTop = contentTop; }
-    overlayHeight = contentHeight;
-    scrollable = false;
+  if (overlayType != 'fullscreen') {
+    var contentHeight = $('#overlay .'+overlayService).height() + $('#overlay .header').height() + 15;
+    var minHeight = 90;
+    if (contentHeight < minHeight) { contentHeight = minHeight; }
+    if (contentHeight < overlayHeight) {
+      var contentTop = arrowTop + 35 - (contentHeight/2);
+      var dip = (overlayTop + overlayHeight) - (contentTop + contentHeight);
+      if (dip < 0) { contentTop = contentTop + dip; }
+      if (contentTop > overlayTop) { overlayTop = contentTop; }
+      overlayHeight = contentHeight;
+      scrollable = false;
+    }
+    var css = {height: overlayHeight, top: overlayTop, borderRadius: '10px'};
+  } else {
+    var css = {height: overlayHeight, width: overlayWidth, left: '100px', top: overlayTop, borderRadius: '10px', opacity: 0.9};
+    $('#overlay .header').hide();
+    $('#overlay iframe').css({height: overlayHeight-20+'px', margin: '10px 0'});
   }
   console.log('scrollable: ' + scrollable);
   $('#overlay').removeClass('scrollable');
-  $('#overlay').animate({height: overlayHeight, top: overlayTop, borderRadius: '10px'}, 500, 'easeInOutCubic', function(){
+  $('#overlay').animate(css, 500, 'easeInOutCubic', function(){
     $('#overlay .loading').fadeOut(500, function() {
-      $('#overlay .header').fadeIn(500);
-      $('#overlay .'+overlayType).fadeIn(500);
-      if (scrollable) {
+      if (overlayType != 'fullscreen') $('#overlay .header').fadeIn(500);
+      $('#overlay .'+overlayService).fadeIn(500);
+      if (scrollable && overlayType == 'inline') {
         $('#overlay').addClass('scrollable');
         console.log('added scrollable');
       }
@@ -454,41 +525,87 @@ function getDummy(type) {
   return div;
 }
 
+function showOverlay(person, arrowLeft, arrowTop, overlayLeft, overlayType) {
+  $('#arrow').css({left: arrowLeft+'px', top: arrowTop+'px'});
+  if (overlayType == 'fullscreen') $('#arrow').hide();
+  var borderRadius = 0;
+  if (overlayType == 'fullscreen') {
+    borderRadius = '10';
+  }
+  $('#overlay').css({height: '70px', top: arrowTop+'px', left: overlayLeft+'px', borderRadius: borderRadius+'px'});
+  $('#overlay .header').hide();
+  $('#overlay .profile').hide();
+  $('#overlay .loading').show();
+  $('#overlay').fadeIn(500, function() {
+    $(document).click(function(event) {
+      if($(event.target).hasClass('icon')) { // icon clicked
+
+      } else {
+        if($(event.target).parents().index($('#overlay')) == -1) {
+          if($('#overlay').is(":visible")) {
+            hideOverlay(person);
+          }
+        }
+      }        
+    });
+  });
+  if (overlayType != 'fullscreen') $('#arrow').fadeIn(500);
+  if (mode != 'mobile') {
+    $('.person:not(#'+person.attr('id')+')').fadeTo(500, 0.3);
+    $('#title').fadeTo(500, 0.3); 
+  }
+}
+
+function getOverlayData(icon, person) {
+  if (icon.hasClass('twitter-icon')) { // load twitter
+    
+    overlayService = 'twitter';
+    var handle = person.data('twitter');
+    $('#permalink').attr('href', 'http://twitter.com/'+handle);
+    $.getJSON('http://smartspaces.herokuapp.com/tweets/'+handle, function(data) {
+      if (length(data) > 0) {
+        var bio = data[0].user.description;
+        $('#overlay .header .name').html(person.data('name'));
+        $('#overlay .bio').html(linkifyTwitter(bio));
+        $('.tweet').remove();
+        $.each(data, function(key, tweet) {
+          var tweetDiv = generateTweetDiv(tweet, handle);
+          tweetDiv.appendTo($('#overlay .twitter'));
+        });
+        openOverlay(icon.data('overlay'));
+      } else {
+        $('#overlay .loading').html('Sorry, no tweets!');
+      }
+      console.log(data);
+    }).fail(function(jqxhr){
+      console.log(jqxhr.responseText);
+    });
+    
+  } else {
+    
+    overlayService = 'linkedin';
+    var publicURL = person.data('linkedin').replace('ca.linkedin', 'www.linkedin');
+    $('#linkedin-iframe').attr('src', '/remote/'+encodeURIComponent(publicURL));
+    openOverlay(icon.data('overlay'));
+  }
+}
+
 function instrumentIcons() {
   $('.icon').unbind('click');
   $('.icon').click(function() {
     var person = $(this).parent();
     
-    if (overlayMode && $(this).hasClass(overlayType+'-icon')) {
+    if (overlayMode && $(this).hasClass(overlayService+'-icon')) {
       
       hideOverlay(person);
       
     } else {
       
       overlayMode = true;
-      overlayType = '';
+      overlayService = '';
       $('.icon').removeClass('active');
       $(this).addClass('active');
       $('#overlay').removeClass('scrollable');
-      
-      setOverlayDimensions();
-      
-      var personLeft = parseInt(person.css('left'));
-      var personTop = parseInt(person.css('top'));
-      var personWidth = person.width();
-      var borderWidth = newBorder;
-      var arrowWidth = 50;
-      // overlay left of bubble
-      var arrowLeft = personLeft + borderWidth - arrowWidth - 20;
-      $('#arrow').css({borderLeft: arrowWidth+'px solid white', borderRight: 'none'});
-      var overlayLeft = arrowLeft - overlayWidth;
-      if (overlayLeft < 0) {
-        // overlay right of bubble
-        arrowLeft = personLeft + personWidth + borderWidth + 20;
-        $('#arrow').css({borderRight: arrowWidth+'px solid white', borderLeft: 'none'});
-        overlayLeft = arrowLeft + arrowWidth;
-      }
-      arrowTop = parseInt(person.data('origY')) + (personWidth/2) - 18;
       
       var loadingType, headerType;
       if ($(this).hasClass('twitter-icon')) {
@@ -501,122 +618,60 @@ function instrumentIcons() {
       
       $('#overlay .loading .type').html(loadingType);
       $('#overlay .header .type').html(headerType);
+      
+      var thisIcon = $(this);
+      var overlayType = $(this).data('overlay');
+      
+      setOverlayDimensions(overlayType);
+      
+      var personLeft = parseInt(person.css('left'));
+      var personTop = parseInt(person.css('top'));
+      var personWidth = person.width();
+      var borderWidth = newBorder;
+      var arrowWidth = 50;
+      
+      if (mode == 'mobile') {
+        if (overlayType == 'fullscreen') {
+          overlayMode = false;
+          window.open($(this).data('url'), '_blank');
+          person.mouseout();
+        } else {
+          personLeft = person.offset().left;
+          personTop = person.offset().top;
 
-      //person.animate({left: person.data('origX'), top: person.data('origY'), borderWidth: person.data('origBorder')}, 300);
-      $('#arrow').css({left: arrowLeft+'px', top: arrowTop+'px'});
-      $('#overlay').css({height: '70px', top: arrowTop+'px', left: overlayLeft+'px', borderRadius: 0});
-      $('#overlay .header').hide();
-      $('#overlay .profile').hide();
-      $('#overlay .loading').show();
-      $('#overlay').fadeIn(500, function() {
-        $(document).click(function(event) {
-          if($(event.target).hasClass('icon')) { // icon clicked
-            
-          } else {
-            if($(event.target).parents().index($('#overlay')) == -1) {
-              if($('#overlay').is(":visible")) {
-                hideOverlay(person);
-              }
-            }
-          }        
-        });
-      });
-      $('#arrow').fadeIn(500);
-      $('.person:not(#'+person.attr('id')+')').fadeTo(500, 0.3);
-      $('#title').fadeTo(500, 0.3);
+          $('.person:not(#'+person.attr('id')+')').fadeOut(500);
+          $('#footer').fadeOut(500);
+          $('html, body').animate({scrollTop: personTop-50}, 500, 'swing', function() {
+            person.css({left: personLeft, top: 50, position: 'fixed'});
+            person.animate({left: personLeft-person.outerWidth()+leftOverhang}, 1000, 'easeInOutQuint', function() {
+              arrowLeft = person.offset().left + personWidth + borderWidth + 20;
+              $('#arrow').css({borderRight: arrowWidth+'px solid white', borderLeft: 'none'});
+              overlayLeft = arrowLeft + arrowWidth;
+              arrowTop = 50 + (personWidth/2) + 18;
+              $('#overlay').css({width: winWidth-arrowLeft-arrowWidth-10});
 
-      if ($(this).hasClass('twitter-icon')) { // load twitter
-        
-        overlayType = 'twitter';
-        var handle = person.data('twitter');
-        $('#permalink').attr('href', 'http://twitter.com/'+handle);
-        $.getJSON('http://smartspaces.herokuapp.com/tweets/'+handle, function(data) {
-          if (length(data) > 0) {
-            var bio = data[0].user.description;
-            $('#overlay .header .name').html(person.data('name'));
-            $('#overlay .bio').html(linkifyTwitter(bio));
-            $('.tweet').remove();
-            $.each(data, function(key, tweet) {
-              var tweetDiv = generateTweetDiv(tweet, handle);
-              tweetDiv.appendTo($('#overlay .twitter'));
+              showOverlay(person, arrowLeft, arrowTop, overlayLeft, overlayType);
+              getOverlayData(thisIcon, person);
             });
-            openOverlay();
-          } else {
-            $('#overlay .loading').html('Sorry, no tweets!');
-          }
-          console.log(data);
-        }).fail(function(jqxhr){
-          console.log(jqxhr.responseText);
-        });
+          });
+        }
         
       } else {
+        // overlay left of bubble
+        var arrowLeft = personLeft + borderWidth - arrowWidth - 20;
+        $('#arrow').css({borderLeft: arrowWidth+'px solid white', borderRight: 'none'});
+        var overlayLeft = arrowLeft - parseInt($('#overlay').css('width'));
+        console.log('OVERLAYLEFT: ' + overlayLeft);
+        if (overlayLeft < 0) {
+          // overlay right of bubble
+          arrowLeft = personLeft + personWidth + borderWidth + 20;
+          $('#arrow').css({borderRight: arrowWidth+'px solid white', borderLeft: 'none'});
+          overlayLeft = arrowLeft + arrowWidth;
+        }
+        arrowTop = parseInt(person.data('origY')) + (personWidth/2) - 18;
         
-        overlayType = 'linkedin';
-        var publicURL = person.data('linkedin');
-        $('#permalink').attr('href', publicURL);
-        $.getJSON('http://smartspaces.herokuapp.com/linkedin/'+publicURL, function(data) {
-          if (length(data) > 0) {
-            $('#overlay .linkedin .section').hide();
-            $('#overlay .header .name').html(person.data('name'));
-            if (length(data.current) > 0) {
-              $('.job').remove();
-              $.each(data.current, function(key, job) {
-                thisJob = getDummy('job');
-                $('.title', thisJob).html(job.title);
-                $('.company', thisJob).html(job.company.name);
-                $('.description', thisJob).html(job.summary);
-                thisJob.appendTo($('#overlay .linkedin .current'));
-              });
-              $('#overlay .linkedin .current').show();
-              if (person.data('company-logo') && person.data('company-link')) {
-                console.log('setting logo and link');
-                var logo = $('#company-logo');
-                var link = $('#company-link');
-                link.attr('href', person.data('company-link'));
-                link.show();
-                link.css({display: 'block'});
-                if (logo.attr('src') == person.data('company-logo')) {
-                  console.log('already loaded');
-                  openOverlay();
-                } else {
-                  logo.attr('src', person.data('company-logo')).load(function() {
-                    console.log('image loaded');
-                    openOverlay();
-                  });
-                }
-              } else {
-                openOverlay();
-              }
-            }
-            /*
-            if (length(data.past) > 0) {
-              $.each(data.past, function(key, job) {
-                thisJob = getDummy('job');
-                $('.title', thisJob).html(job.title);
-                $('.company', thisJob).html(job.company);
-                $('.description', thisJob).html(job.description);
-                thisJob.appendTo($('#overlay .linkedin .past'));
-                $('#overlay .linkedin .past').show();
-              });
-            }
-            if (length(data.education) > 0) {
-              $.each(data.education, function(key, degree) {
-                thisDegree = getDummy('degree');
-                $('.type', thisDegree).html(degree.description);
-                $('.school', thisDegree).html(degree.name);
-                thisDegree.appendTo($('#overlay .linkedin .education'));
-                $('#overlay .linkedin .education').show();
-              });
-            }
-            */
-          } else {
-            $('#overlay .loading').html('Sorry, no profile found!');
-          }
-          console.log(data);
-        }).fail(function(jqxhr){
-          console.log(jqxhr.responseText);
-        });
-        
+        showOverlay(person, arrowLeft, arrowTop, overlayLeft, overlayType);
+        getOverlayData(thisIcon, person);
       }
       
     }
@@ -626,12 +681,18 @@ function instrumentIcons() {
 function hideLoader() {
   if (loading) {
     $('#header').show();
-    $('#footer').show();
+    if (mode != 'mobile') $('#footer').show();
     $('#loading').remove();
     $('#title').show();
     
     if (view=='place') {
       $('#place').show();
+    }
+    
+    if (mode == 'mobile') {
+      $('#place').hide();
+      $('#people').hide();
+      $('#mobile-menu').show();
     }
 
     var identifier = getAreaIdentifier();
@@ -656,10 +717,16 @@ function initObjects() {
   setLabelTops();
   setHovers();
   instrumentIcons();
+  console.log('DONE INITIALIZING');
   if (blurred) { stopMotion(); }
 }
 
 function calculateSize() {
+  if (mode == 'mobile') {
+    size = sizes[1];
+    sizeIndex = sizes.indexOf(size);
+    return false;
+  }
   $.each(sizeWidths, function(index, width) {
     var maxPop = (winWidth * winHeight) / (6 * width * width);
     if (maxPop > population) {
@@ -673,7 +740,7 @@ function calculateSize() {
 
 function refresh() {
   setBackground();
-  if (overlayMode || (!moving && !blurred)) { return false; }
+  if (overlayMode || (!moving && !blurred && mode != 'mobile')) { return false; }
   console.log('REFRESHING');
   $.getJSON(jsonURL, function(data) {
     stopMotion();
@@ -743,15 +810,22 @@ function getBoxNum(box) {
 }
 
 function getAdjacentBoxes(box) {
-  var num = getBoxNum(box);
-  var adjacentNums = [num - boxesPerRow, num + boxesPerRow, num - 1, num + 1];
-  console.log(adjacentNums);
   var adjacentBoxes = [];
-  $.each(adjacentNums, function(index, thisNum) {
-    if (thisNum > 0 && thisNum <= numBoxes) {
-      adjacentBoxes.push($('#social-item-'+thisNum));
-    }
-  });
+  if (mode == 'mobile') {
+    adjacentBoxes.push(box.prev('.social-item'));
+    adjacentBoxes.push(box.next('.social-item'));
+    console.log('ADJACENT BOXES:');
+    console.log(adjacentBoxes);
+  } else {
+    var num = getBoxNum(box);
+    var adjacentNums = [num - boxesPerRow, num + boxesPerRow, num - 1, num + 1];
+    console.log(adjacentNums);
+    $.each(adjacentNums, function(index, thisNum) {
+      if (thisNum > 0 && thisNum <= numBoxes) {
+        adjacentBoxes.push($('#social-item-'+thisNum));
+      }
+    });
+  }
   return adjacentBoxes;
 }
 
@@ -1102,6 +1176,7 @@ function insertTweet(box, tweetObject) {
   }
   $('.from', box).html(linkifyTwitter('@'+from));
   $('.content', box).html(linkifyTwitter(text));
+  console.log(box);
   box.attr('href', 'https://twitter.com/'+from+'/status/'+tweetID);
   box.removeClass('photo');
   
@@ -1167,8 +1242,11 @@ function getMoreTweets(numTweets) {
 }
 
 function freshTweet() {
-  var randomBoxNum = Math.floor(Math.random() * numBoxes) + 1;
-  var oldBox = getBox(randomBoxNum);
+  do {
+    var randomBoxNum = Math.floor(Math.random() * numBoxes) + 1;
+    var oldBox = getBox(randomBoxNum);
+  } while (oldBox.is(':hover') || randomBoxNum==lastRandomBoxNum);
+  lastRandomBoxNum = randomBoxNum;
   var newBox = makeNewBox();
   var tweet = getMoreTweets(1)[0];
   
@@ -1216,23 +1294,34 @@ function collectTweets() {
         async: false
     });
   });
-  sortHashtags();
-  fillHashtags();
+  if (mode != 'mobile') sortHashtags();
+  if (mode != 'mobile') fillHashtags();
   tweetsLeft = cloneList(tweets);
 }
 
 function fillTweets() {
   console.log(tweetsLeft);
-  var shownTweets = getMoreTweets(numBoxes);
-  var i = 1;
-  $.each(shownTweets, function(index, tweet){
-    var box = getBox(i);
-    console.log('Inserting tweet.');
-    insertTweet(box, tweet);
-    tailorSocialBox(box);
-    colorSocialBox(box);
-    i++;
-  });
+  if (mode == 'mobile') {
+    var shownTweets = getMoreTweets(50);
+    $.each(shownTweets, function(index, tweet){
+      var box = makeNewBox();
+      console.log('Inserting tweet.');
+      var boxTweet = insertTweet(box, tweet);
+      boxTweet.appendTo('#social-scene');
+      colorSocialBox(boxTweet);
+    });
+  } else {
+    var shownTweets = getMoreTweets(numBoxes);
+    var i = 1;
+    $.each(shownTweets, function(index, tweet){
+      var box = getBox(i);
+      console.log('Inserting tweet.');
+      insertTweet(box, tweet);
+      tailorSocialBox(box);
+      colorSocialBox(box);
+      i++;
+    });
+  }
 }
 
 function generateTweetDiv(tweet, username) {
@@ -1281,20 +1370,36 @@ function viewButtons() {
   })
 }
 
+function mobileButtons() {
+  $('.selector', '#mobile-menu').click(function() {
+    view = $(this).data('view');
+    $('#header').fadeOut(200);
+    $('.button[data-view="'+view+'"]', '#footer').addClass('selected');
+    $('#mobile-menu').fadeOut(200, function() {
+      $('#footer').fadeIn(200);
+      $('#'+view).fadeIn(200, function() {
+        if (view == 'place' && !placeViewInit) initPlaceView();
+      });
+    });
+    viewButtons();
+  });
+}
+
 function initPlaceView() {
-  placeSocialBoxes();
+  if (mode != 'mobile') placeSocialBoxes();
   $.getJSON('/'+placeName+'/recent', function(data) {
     $.each(data, function(index, object) {
       addTwitterUser(object['twitterPersonalScreenName']);
     });
     console.log(twitters);
     //twitters = ['bogdream'];
-    showNewsFeed();
-    showNotices();
+    if (mode != 'mobile') showNewsFeed();
+    if (mode != 'mobile') showNotices();
+    if (mode == 'mobile') $('.spin-loader', '#place').hide();
     collectTweets();
     fillTweets();
-    var socialRefresher = setInterval(refreshSocial, 5000);
-    var tweetCollector = setInterval(collectTweets, 60000);
+    if (mode != 'mobile') var socialRefresher = setInterval(refreshSocial, 5000);
+    if (mode != 'mobile') var tweetCollector = setInterval(collectTweets, 60000);
     placeViewInit = true;
   });
 }
@@ -1303,17 +1408,20 @@ function switchView(newView) {
   view = newView;
   $('#people').hide();
   $('#place').hide();
+  console.log('SHOWING ' + view);
   $('#'+view).show();
   
-  $('body').removeClass();
-  $('body').addClass(view);
+  if (mode != 'mobile') {
+    $('body').removeClass();
+    $('body').addClass(view);
+  }
   
   if (view == 'people') {
     setBackground();
   }
   
   if (view == 'place') {
-    $('.people').hide();
+    $('#title.people').hide();
     if (!placeViewInit) initPlaceView();
   }
 }
@@ -1342,17 +1450,22 @@ $(document).ready(function(){
 	sizeWidths = [300, 200, 150, 130, 110, 90, 75];
 	borders = [30, 20, 15, 13, 11, 9, 8];
 	labelShifts = [-30, -20, -15, -13, -11, -9, -8];
-	winWidth = $(window).width();
-	winHeight = $(window).height();
+	getWindowDimensions();
 	overlayMode = false;
 	updating = false;
 	blurred = false;
+	moving = false;
 	placeViewInit = false;
+	leftOverhang = 60;
 	
 	view = getParam('view');
   if (view.length == 0) view = 'people'; // default view
   
+  mode = getParam('mode');
+  if (mode.length == 0) mode = 'desktop'; // default mode
+  
   $('body').addClass(view);
+  $('body').addClass(mode);
   
   if (view == 'people') {
     setBackground();
@@ -1366,6 +1479,7 @@ $(document).ready(function(){
 	visualBoost = 30;
 	hashtags = [];
 	sortedHashtags = [];
+	lastRandomBoxNum = -1;
 	
 	jsonURL = $('body').data('json');
   jsonURL = getJsonUrl();
@@ -1415,11 +1529,19 @@ $(document).ready(function(){
       person.appendTo($('#people'));
     });
     
-    initObjects();
+    initObjects();    
+    
+    if (mode == 'mobile') {
+      $('#mobile-menu').css({top: $('#header').outerHeight()+'px'});
+      mobileButtons();
+    } else {
+      viewButtons();
+    }
+    
     hideLoader();
-    viewButtons();
     
     if (view == 'place') {
+      $('.people').hide();
       initPlaceView();
     }
   });
@@ -1436,8 +1558,12 @@ $(window).focus(function(){
   blurred = false;
 });
 
-$(window).resize(function() {
+function getWindowDimensions() {
   winWidth = $(window).width();
 	winHeight = $(window).height();
-	sizeLayout();
+}
+
+$(window).resize(function() {
+  getWindowDimensions();
+	if (mode != 'mobile') sizeLayout();
 });
