@@ -455,6 +455,8 @@ function hideOverlay(person) {
     $('.person:not(#'+person.attr('id')+')').show();
     cssReset = {position: 'relative', top: 0, left: 0, borderWidth: person.data('origBorder'), marginBottom: person.data('origMarginBottom')};
     person.css(cssReset);
+    console.log(person.data('origScroll'));
+    $(window).scrollTop(person.data('origScroll'));
   } else {
     $('.person:not(#'+person.attr('id')+')').fadeTo(500, 1.0);
     cssReset = {left: person.data('origX'), top: person.data('origY'), borderWidth: person.data('origBorder')};
@@ -631,6 +633,8 @@ function instrumentIcons() {
       var arrowWidth = 50;
       
       if (mode == 'mobile') {
+        person.data('origScroll', $(window).scrollTop());
+        
         if (overlayType == 'fullscreen') {
           overlayMode = false;
           window.open($(this).data('url'), '_blank');
@@ -1463,6 +1467,10 @@ $(document).ready(function(){
   
   mode = getParam('mode');
   if (mode.length == 0) mode = 'desktop'; // default mode
+  
+  if (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    mode = 'mobile';
+  }
   
   $('body').addClass(view);
   $('body').addClass(mode);
