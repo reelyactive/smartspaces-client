@@ -696,7 +696,7 @@ function hideLoader() {
     if (mode == 'mobile') {
       $('#place').hide();
       $('#people').hide();
-      $('#mobile-menu').show();
+      $('#mobile-home').show();
     }
 
     var identifier = getAreaIdentifier();
@@ -1438,6 +1438,15 @@ function cycleAmbient() {
   }
 }
 
+function showConnectButton() {
+  $('#connect-button').fadeIn(1000);
+  function fadeLoop() {
+    $('#connect-button .inner').animate({opacity:'+=0.7'}, 800);
+    $('#connect-button .inner').animate({opacity:'-=0.7'}, 800, fadeLoop);
+  }
+  fadeLoop();
+}
+
 function getAreaIdentifier() {
   // Identifiers are obtained by slice to remove leading '#' or '/'.
   var identifier = window.location.hash.slice(1);
@@ -1479,6 +1488,8 @@ $(document).ready(function(){
   if (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
     mode = 'mobile';
   }
+  
+  task = getParam('task');
   
   $('body').addClass(view);
   $('body').addClass(mode);
@@ -1548,8 +1559,12 @@ $(document).ready(function(){
     initObjects();    
     
     if (mode == 'mobile') {
-      $('#mobile-menu').css({top: $('#header').outerHeight()+'px'});
+      $('#mobile-home').css({top: $('#header').outerHeight()+'px'});
       mobileButtons();
+      
+      if (task == 'connect') {
+        setTimeout(showConnectButton, 1000);
+      }
     } else {
       viewButtons();
     }
