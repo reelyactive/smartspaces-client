@@ -218,7 +218,7 @@ function placeObjectsAtSize(sizeId) {
   var min_x = 0;
   var max_x = winWidth - objectSize;
   var min_y = $('#header').height();
-  var max_y = winHeight - objectSize*buffer - $('#footer').height();
+  var max_y = winHeight - objectSize*buffer - $('#footer:visible').height();
   var padding_buffer = objectSize / 6;
   var max_tries = 100;
 
@@ -475,7 +475,7 @@ function setOverlayDimensions(overlayType) {
     overlayTop = 10;
     overlayWidth = winWidth - $('#arrow').offset().left - $('#arrow').width() - 10;
   } else {
-    overlayHeight = winHeight - $('#header').height() - $('#footer').height() - 20;
+    overlayHeight = winHeight - $('#header').height() - $('#footer:visible').height() - 20;
     overlayTop = $('#header').height() + 10;
     overlayWidth = 300;
     console.log('OVERLAY TYPE');
@@ -796,7 +796,7 @@ function refresh() {
 
 function remainingSocialSpace() {
   var socialSceneDiv = $('#social-scene-container');
-  var currentHeight = socialSceneDiv.height() + socialSceneDiv.offset().top + $('#footer').height() + 10;
+  var currentHeight = socialSceneDiv.height() + socialSceneDiv.offset().top + $('#footer:visible').height() + 10;
   var remainder = $(window).height() - currentHeight;
   return remainder;
 }
@@ -1416,7 +1416,7 @@ function switchView(newView) {
   $('#'+view).show();
   
   if (mode != 'mobile') {
-    $('body').removeClass();
+    $('body').removeClass('people place');
     $('body').addClass(view);
   }
   
@@ -1427,6 +1427,14 @@ function switchView(newView) {
   if (view == 'place') {
     $('#title.people').hide();
     if (!placeViewInit) initPlaceView();
+  }
+}
+
+function cycleAmbient() {
+  if (view == 'people') {
+    switchView('place');
+  } else {
+    switchView('people');
   }
 }
 
@@ -1551,6 +1559,10 @@ $(document).ready(function(){
     if (view == 'place') {
       $('.people').hide();
       initPlaceView();
+    }
+    
+    if (mode == 'ambient') {
+      var ambientCycler = setInterval(cycleAmbient, 60000);
     }
   });
 });

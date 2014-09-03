@@ -28,6 +28,10 @@ body.mobile #title, body.mobile #footer .visit, body.mobile #footer .choose-view
   display: none !important;
 }
 
+body.ambient #footer {
+  display: none !important;
+}
+
 body.mobile .person {
   position: relative;
   margin: 0 auto;
