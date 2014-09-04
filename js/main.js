@@ -1,4 +1,4 @@
-var API_URL = "http://logintolife.at/hlc-crapi.php?area=";
+var API_URL = "http://www.hyperlocalcontext.com/at/";
 
 
 $.fn.preload = function() {
@@ -749,15 +749,28 @@ function refresh() {
   $.getJSON(jsonURL, function(data) {
     stopMotion();
     var ids = [];
-    $.each(data, function(id, info) {
-      ids.push(id);
-      if ($('#'+id).length == 0) { // new person
-        var person = addPerson(id, info);
-        if (person) {
-          console.log('NEW PERSON');
-          updating = true;
-          person.addClass(size);
-          person.appendTo($('#people'));
+    $.each(data, function(thisID, thisItem) {
+      if (thisItem.hasOwnProperty('url')) {
+        var id = thisItem['value'];
+        ids.push(id);
+        if ($('#'+id).length == 0) { // new person
+          $.ajax({
+              type: 'GET',
+              url: thisItem['url'],
+              dataType: 'json',
+              success: function(info) {
+                console.log(info);
+                var person = addPerson(id, info);
+                if (person) {
+                  console.log('NEW PERSON');
+                  updating = true;
+                  person.addClass(size);
+                  person.appendTo($('#people'));
+                }
+              },
+              data: {},
+              async: false
+          });
         }
       }
     });
@@ -1538,46 +1551,59 @@ $(document).ready(function(){
 	});
 	
 	$.getJSON(jsonURL, function(data) {
-    $.each(data, function(id, info) {
-      addPerson(id, info);
-      console.log('added ' + id);
+    $.each(data, function(thisID, thisItem) {
+      if (thisItem.hasOwnProperty('url')) {
+        var id = thisItem['value'];
+        $.ajax({
+            type: 'GET',
+            url: thisItem['url'],
+            dataType: 'json',
+            success: function(info) {
+              console.log(info);
+              addPerson(id, info);
+              console.log('added ' + id);
+            },
+            data: {},
+            async: false
+        });
+      }
     });
     
     calculateSize();
-    
+
     if (size == 'big' || size == 'medium') {
       path = mediumPath;
     } else {
       path = smallPath;
     }
-    
+
     $.each(people, function(index, person) {
       person.addClass(size);
       person.appendTo($('#people'));
     });
-    
+
     initObjects();    
-    
+
     if (mode == 'mobile') {
       $('#mobile-home').css({top: $('#header').outerHeight()+'px'});
       mobileButtons();
-      
+
       if (task == 'connect') {
         setTimeout(showConnectButton, 1000);
       }
     } else {
       viewButtons();
     }
-    
+
     hideLoader();
-    
+
     if (view == 'place') {
       $('.people').hide();
       initPlaceView();
     }
-    
+
     if (mode == 'ambient') {
-      var ambientCycler = setInterval(cycleAmbient, 60000);
+      var ambientCycler = setInterval(cycleAmbient, 10000);
     }
   });
 });
