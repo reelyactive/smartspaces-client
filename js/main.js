@@ -313,6 +313,13 @@ function addPerson(id, info) {
   return person;
 }
 
+function insertPerson(person) {
+  console.log('NEW PERSON');
+  updating = true;
+  person.addClass(size);
+  person.appendTo($('#people'));
+}
+
 function resetPeople() {
   people = [];
   $('.person').each(function() {
@@ -738,71 +745,6 @@ function calculateSize() {
       sizeIndex = sizes.indexOf(size);
       console.log('size found: ' + size);
       return false;
-    }
-  });
-}
-
-function refresh() {
-  setBackground();
-  if (overlayMode || (!moving && !blurred && mode != 'mobile')) { return false; }
-  console.log('REFRESHING');
-  $.getJSON(jsonURL, function(data) {
-    stopMotion();
-    var ids = [];
-    $.each(data, function(thisID, thisItem) {
-      if (thisItem.hasOwnProperty('url')) {
-        var id = thisItem['value'];
-        ids.push(id);
-        if ($('#'+id).length == 0) { // new person
-          $.ajax({
-              type: 'GET',
-              url: thisItem['url'],
-              dataType: 'json',
-              success: function(info) {
-                console.log(info);
-                var person = addPerson(id, info);
-                if (person) {
-                  console.log('NEW PERSON');
-                  updating = true;
-                  person.addClass(size);
-                  person.appendTo($('#people'));
-                }
-              },
-              data: {},
-              async: false
-          });
-        }
-      }
-    });
-    $.each(people, function(index, person) {
-      if (ids.indexOf(person.attr('id')) < 0) { // person no longer here
-        console.log('PERSON GONE');
-        console.log(person.data('name'));
-        person.remove();
-        population--;
-        updating = true;
-      } else {
-        $('.label', person).removeAttr('style');
-        if (person.hasClass('hover')) {
-          person.trigger('mouseout');
-        }
-      }
-    });
-    if (updating) {
-      resetPeople();
-      var oldSize = size;
-      calculateSize();
-      if (size != oldSize) {
-        $.each(people, function(index, person) {
-          person.removeClass(oldSize);
-          person.addClass(size);
-          person.css({borderWidth: ''});
-        });
-      }
-      initObjects();
-      updating = false;
-    } else {
-      if (!blurred) { resumeMotion(); }
     }
   });
 }
@@ -1477,6 +1419,85 @@ function getJsonUrl() {
   }
 }
 
+function refresh() {
+  setBackground();
+  if (overlayMode || (!moving && !blurred && mode != 'mobile')) { return false; }
+  console.log('REFRESHING');
+  $.getJSON(jsonURL, function(data) {
+    stopMotion();
+    parseJSON(data, true);
+    $.each(people, function(index, person) {
+      if (ids.indexOf(person.attr('id')) < 0) { // person no longer here
+        console.log('PERSON GONE');
+        console.log(person.data('name'));
+        person.remove();
+        population--;
+        updating = true;
+      } else {
+        $('.label', person).removeAttr('style');
+        if (person.hasClass('hover')) {
+          person.trigger('mouseout');
+        }
+      }
+    });
+    if (updating) {
+      resetPeople();
+      var oldSize = size;
+      calculateSize();
+      if (size != oldSize) {
+        $.each(people, function(index, person) {
+          person.removeClass(oldSize);
+          person.addClass(size);
+          person.css({borderWidth: ''});
+        });
+      }
+      initObjects();
+      updating = false;
+    } else {
+      if (!blurred) { resumeMotion(); }
+    }
+  });
+}
+
+function parseJSON(data, refreshing) {
+  var hyperlocal = false;
+  $.each(data, function(thisID, thisItem) {
+    if (thisItem.hasOwnProperty('url')) hyperlocal = true;
+  });
+  
+  ids = [];
+  if (hyperlocal) {
+    $.each(data, function(thisID, thisItem) {
+      if (thisItem.hasOwnProperty('url')) {
+        var id = thisItem['value'];
+        ids.push(id);
+        if ($('#'+id).length == 0) { // new person
+          $.ajax({
+              type: 'GET',
+              url: thisItem['url'],
+              dataType: 'json',
+              success: function(info) {
+                console.log(info);
+                var person = addPerson(id, info);
+                if (refreshing && person) insertPerson(person);
+                console.log('added ' + id);
+              },
+              async: false
+          });
+        }
+      }
+    }); 
+  } else {
+    $.each(data, function(id, info) {
+      ids.push(id);
+      if ($('#'+id).length == 0) { // new person
+        var person = addPerson(id, info);
+        if (refreshing && person) insertPerson(person);
+      }
+    });
+  }
+}
+
 $(document).ready(function(){
   sizes = ['big', 'medium', 'small', 'smaller', 'tiny', 'tinier', 'puny'];
 	size = '';
@@ -1521,9 +1542,8 @@ $(document).ready(function(){
 	sortedHashtags = [];
 	lastRandomBoxNum = -1;
 	
-	jsonURL = $('body').data('json');
-  jsonURL = getJsonUrl();
-  console.log('API URL', jsonURL)
+	//jsonURL = $('body').data('json');
+  //jsonURL = getJsonUrl();
   placeName = getAreaIdentifier();
   
 	people = [];
@@ -1538,11 +1558,22 @@ $(document).ready(function(){
   fadeLoop();
   
   placeInfo = {};
-  $.getJSON('/'+placeName+'/info', function(data) {
-    $.each(data, function(id, info) {
-      placeInfo[id] = info;
-    });
+  $.ajax({
+      type: 'GET',
+      url: '/'+placeName+'/info',
+      dataType: 'json',
+      success: function(data) {
+        console.log(data);
+        $.each(data, function(id, info) {
+          placeInfo[id] = info;
+        });
+      },
+      async: false
   });
+  
+  API_URL = placeInfo.apiUrl;
+  jsonURL = getJsonUrl();
+  console.log('API URL', jsonURL)
   
 	$.post('/track', {
 	  apiRoot: API_URL,
@@ -1551,24 +1582,7 @@ $(document).ready(function(){
 	});
 	
 	$.getJSON(jsonURL, function(data) {
-    $.each(data, function(thisID, thisItem) {
-      if (thisItem.hasOwnProperty('url')) {
-        var id = thisItem['value'];
-        $.ajax({
-            type: 'GET',
-            url: thisItem['url'],
-            dataType: 'json',
-            success: function(info) {
-              console.log(info);
-              addPerson(id, info);
-              console.log('added ' + id);
-            },
-            data: {},
-            async: false
-        });
-      }
-    });
-    
+	  parseJSON(data);
     calculateSize();
 
     if (size == 'big' || size == 'medium') {
