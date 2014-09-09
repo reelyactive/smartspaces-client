@@ -3,19 +3,20 @@
   <head>
     <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"><![endif]-->
     <meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no">
     <title>Smart Space by reelyActive</title>
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" href="../style/main.css">
     <!--[if lt IE 9]><script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
   </head>
   <body>
-    <div class="dummy">
+    <div class="dummy" id="person-dummy">
       <div class="label">
         <div class="name"></div>
         <div class="company"></div>
       </div>
-      <div class="twitter-icon icon"></div>
-      <div class="linkedin-icon icon"></div>
+      <div class="twitter-icon icon" data-overlay="inline"></div>
+      <div class="linkedin-icon icon" data-overlay="fullscreen"></div>
     </div>
     <div id="header">
       <span class="welcome">Welcome!</span>
@@ -23,12 +24,72 @@
       <span class="reely">reely</span><span class="active">Active</span>
       <span class="smart-space">smart space</span>.
     </div>
-    <div id="title" class="avoid">Who&#39;s here<span class="faded">?</span></div>
+    <div id="title" class="people avoid">Who&#39;s here<span class="faded">?</span></div>
     <div id="loading">Loading...</div>
-    <div id="people"></div>
+    <div id="people" class="people"></div>
     <div id="footer" class="avoid">
-      Visit <span class="url">smartspac.es</span> to learn more.
+			<span class="choose-view">Choose a <span class="highlight">view</span>:</span><div class="button left" data-view="people">Who's Here?</div><div class="button right" data-view="place">Social Scene</div>
+      <span class="visit">Visit <span class="url">smartspac.es</span> to learn more.</span>
     </div>
+		<div id="mobile-home">
+			<div id="mobile-menu">
+				<div class="selector" data-view="people">Who&#39;s Here</div>
+				<div class="selector" data-view="place">Social Scene</div>
+			</div>
+			<div id="connect-button">
+				<div class="outer"></div>
+				<div class="inner"></div>
+				<div class="label">Tap here to<br /><span class="h">connect yourself</span><br />to this space.</div>
+			</div>
+		</div>
+		<div id="place">
+			<div id="social-scene-container">
+				<div class="header">
+					<div class="title">Social Scene</div>
+					<div class="description">Recent tweets from people who spend time here.</div>
+				</div>
+				<div id="social-scene">
+					<div class="spin-loader"><img src="../style/loader.gif" height="128" width="128"></div>
+				</div>
+			</div>
+			<div id="trending-container">
+				<div class="header">
+					<div class="title">Trending</div>
+					<div class="description">Hot topics.</div>
+				</div>
+				<div id="trending"></div>
+			</div>
+			<div id="news-container">
+				<div id="newsfeed-container">
+					<div class="header">
+						<div class="title">News Feed</div>
+						<div class="description">Official updates from <span class="space-name">this space</span>.</div>
+					</div>
+					<div id="newsfeed"></div>
+				</div>
+				<div id="noticeboard-container">
+					<div class="header">
+						<div class="button add">Add new</div>
+						<div class="button post">Post</div>
+						<div class="button cancel">Cancel</div>
+						<div class="title">Notice Board</div>
+						<div class="description">Announcements for visitors.</div>
+					</div>
+					<div id="notices" class="empty"></div>
+					<textarea id="notice-form" rows="4" cols="50"></textarea>
+				</div>
+			</div>
+		</div>
+		<a class="social-item dummy" href="#" target="_blank">
+			<div class="content"></div>
+			<div class="from"></div>
+			<div class="via">via <span class="user"></span></div>
+		</a>
+		<div class="trending-topic dummy">
+			<a class="text" href="#" target="_blank">
+				<span class="hash">#</span><span class="tag"></span>
+			</a>
+		</div>
     <div id="overlay">
       <div class="loading">Loading <span class="type"></span>...</div>
       <a href="#" target="_blank" id="permalink">
@@ -45,28 +106,11 @@
         </div>
       </div>
       <div class="linkedin profile">
-        <a href="" target="_blank" id="company-link"><img id="company-logo" /></a>
-        <div class="section current">
-          <div class="heading">Current</div>
-        </div>
-        <div class="section past">
-          <div class="heading">Past</div>
-        </div>
-        <div class="section education">
-          <div class="heading">Education</div>
-        </div>
-      </div>
-      <div class="dummy-job">
-        <div class="heading"><span class="title"></span> at <span class="company"></span></div>
-        <div class="description"></div>
-      </div>
-      <div class="dummy-degree">
-        <div class="type"></div>
-        <div class="school"></div>
+        <iframe src="" id="linkedin-iframe"></iframe>
       </div>
     </div>
     <div id="arrow"></div>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     <script src='../js/jquery.hoverIntent.min.js'></script>
     <script src='../js/jquery.collision.min.js'></script>
     <script src='../js/jquery.visible.min.js'></script>
@@ -74,6 +118,7 @@
     <script src='../js/jquery.easing.1.3.js'></script>
     <script src='../js/Autolinker.min.js'></script>
     <script src='../js/pathAnimator.js'></script>
+		<script src="../js/js-weighted-list.js"></script>
     <script src='../js/main.js'></script>
     <script type="text/javascript">
       $(window).load(function() {
