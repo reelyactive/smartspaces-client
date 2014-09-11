@@ -594,8 +594,11 @@ function getOverlayData(icon, person) {
     
     overlayService = 'linkedin';
     var publicURL = person.data('linkedin').replace('ca.linkedin', 'www.linkedin');
-    $('#linkedin-iframe').attr('src', '/remote/'+encodeURIComponent(publicURL));
-    openOverlay(icon.data('overlay'));
+    $.post('/remote', { url: publicURL }, function(data) {
+      console.log(data);
+      $('#linkedin-iframe').attr('src', '/remote/'+data.hash);
+      openOverlay(icon.data('overlay'));
+    }, 'json');
   }
 }
 
