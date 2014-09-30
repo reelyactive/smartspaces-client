@@ -43,7 +43,7 @@ body.mobile #people {
   padding-bottom: 500px;
 }
 
-body.people {
+body.people, body.devices {
   background: #636363; /* Old browsers */
   background-image: url(bg.png);
   background-position: 0% 0%;
@@ -202,7 +202,7 @@ body.mobile #header {
   opacity: 0.3;
 }
 
-body.people #loading {
+body.people #loading, body.devices #loading {
   color: white;
 }
 
@@ -331,6 +331,14 @@ body.mobile #footer .button {
   background-image: url(dummy-avatar.png);
 }
 
+.device {
+  display: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
 .big {
   width: 300px;
   height: 300px;
@@ -433,10 +441,24 @@ body.mobile #footer .button {
 .icon {
   display: none;
   position: absolute;
+  font-weight: 800;
 }
 
-.icon:hover {
+.icon:not(.twitter-icon) {
+  background-color: white;
+}
+
+.icon:not(.twitter-icon):hover, .icon:not(.twitter-icon).active {
   box-shadow: none;
+  background: #676767; /* Old browsers */
+  background: -moz-linear-gradient(top, #676767 0%, #000000 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#676767), color-stop(100%,#000000)); /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(top, #676767 0%,#000000 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top, #676767 0%,#000000 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(top, #676767 0%,#000000 100%); /* IE10+ */
+  background: linear-gradient(to bottom, #676767 0%,#000000 100%); /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#676767', endColorstr='#000000',GradientType=0 ); /* IE6-9 */
+  color: white;
 }
 
 .twitter-icon {
@@ -573,54 +595,6 @@ body.mobile #footer .button {
 
 .tweet a.timestamp:hover {
   color: black;
-}
-
-.linkedin .section {
-  padding: 10px;
-  padding-bottom: 0;
-  font-size: 14px;
-  display: none;
-}
-
-.linkedin .section > .heading {
-  font-style: italic;
-  font-weight: 300;
-  font-size: 15px;
-  margin-bottom: 6px;
-  text-transform: lowercase;
-  display: none;
-}
-
-.linkedin .title, .linkedin .company {
-  font-weight: 600;
-}
-
-.linkedin .job {
-  margin-bottom: 6px;
-}
-
-.linkedin .job .heading {
-  line-height: 15px;
-}
-
-.linkedin .job .description {
-  font-size: 12px;
-  line-height: 14px;
-  margin-top: 4px;
-}
-
-.linkedin .degree {
-  line-height: 14px;
-  margin-bottom: 6px;
-}
-
-.linkedin .degree .type {
-  font-weight: 600;
-}
-
-.linkedin .degree .school {
-  margin-top: 3px;
-  font-style: italic;
 }
 
 #overlay a {

@@ -15,8 +15,7 @@
         <div class="name"></div>
         <div class="company"></div>
       </div>
-      <div class="twitter-icon icon" data-overlay="inline"></div>
-      <div class="linkedin-icon icon" data-overlay="fullscreen"></div>
+      <div class="twitter-icon icon" data-overlay="api"></div>
     </div>
     <div id="header">
       <span class="welcome">Welcome!</span>
@@ -24,11 +23,12 @@
       <span class="reely">reely</span><span class="active">Active</span>
       <span class="smart-space">smart space</span>.
     </div>
-    <div id="title" class="people avoid">Who&#39;s here<span class="faded">?</span></div>
+    <div id="title" class="people avoid"><span id="who-what">Who</span>&#39;s here<span class="faded">?</span></div>
     <div id="loading">Loading...</div>
     <div id="people" class="people"></div>
     <div id="footer" class="avoid">
-			<span class="choose-view">Choose a <span class="highlight">view</span>:</span><div class="button left" data-view="people">Who's Here?</div><div class="button right" data-view="place">Social Scene</div>
+			<span class="choose-view">Choose a <span class="highlight">view</span>:</span>
+			<div class="button" data-view="people">Who's Here?</div><div class="hidden button" id="devices-button" data-view="devices">What's Here?</div><div class="button" data-view="place">Social Scene</div>
       <span class="visit">Visit <span class="url">smartspac.es</span> to learn more.</span>
     </div>
 		<div id="mobile-home">
@@ -105,9 +105,7 @@
           <a href="#" class="timestamp" target="_blank"></a>
         </div>
       </div>
-      <div class="linkedin profile">
-        <iframe src="" id="linkedin-iframe"></iframe>
-      </div>
+			<iframe src="" id="iframe"></iframe>
     </div>
     <div id="arrow"></div>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
