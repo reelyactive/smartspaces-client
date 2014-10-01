@@ -318,6 +318,7 @@ function addPerson(id, info, device) {
       thisIcon.html(service.name.substr(0,2));
       thisIcon.data('attributeName', service.attributeName);
       thisIcon.data('overlay', service.displayType);
+      thisIcon.data('retrievalMode', service.retrievalMode);
       thisIcon.data('service', service.name);
       thisIcon.addClass(service.displayType + '-icon');
       var urlStructure = service.urlStructure;
@@ -351,10 +352,12 @@ function setVisibility() {
 
 function insertPerson(person) {
   console.log('NEW PERSON');
-  updating = true;
+  console.log(person.attr('id'));
+  console.log(person.data('name'));
   person.addClass(size);
   person.appendTo($('#people'));
   setVisibility();
+  if (person.is(':visible')) updating = true;
 }
 
 function resetPeople() {
@@ -633,14 +636,20 @@ function getOverlayData(icon, person) {
   } else {
     
     overlayService = icon.data('attributeName');
+    var retrievalMode = icon.data('retrievalMode');
     $('#overlay .header .name').html(person.data('name'));
     $('#permalink').attr('href', icon.data('url'));
-    $.post('/remote', { url: icon.data('url') }, function(data) {
-      console.log(data);
-      $('#iframe').attr('src', '/remote/'+data.hash);
-      console.log('OVERLAY DATA TYPE' + icon.data('overlay'));
+    if (retrievalMode == 'proxy') {
+      $.post('/remote', { url: icon.data('url') }, function(data) {
+        console.log(data);
+        $('#iframe').attr('src', '/remote/'+data.hash);
+        console.log('OVERLAY DATA TYPE' + icon.data('overlay'));
+        openOverlay(icon.data('overlay'));
+      }, 'json');
+    } else {
+      $('#iframe').attr('src', icon.data('url'));
       openOverlay(icon.data('overlay'));
-    }, 'json');
+    }
   }
 }
 
@@ -1478,13 +1487,14 @@ function refresh() {
     stopMotion();
     parseJSON(data, true);
     console.log(ids);
+    resetPeople();
     $.each(people, function(index, person) {
       if (ids.indexOf(person.attr('id')) < 0) { // person no longer here
         console.log('PERSON GONE');
         console.log(person.attr('id'));
         console.log(person.data('name'));
-        person.remove();
         if (person.is(':visible')) updating = true;
+        person.remove();
       } else {
         $('.label', person).removeAttr('style');
         if (person.hasClass('hover')) {
@@ -1494,7 +1504,6 @@ function refresh() {
     });
     if (updating) {
       console.log('UPDATING');
-      resetPeople();
       var oldSize = size;
       calculateSize();
       if (size != oldSize) {
