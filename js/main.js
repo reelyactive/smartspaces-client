@@ -214,11 +214,11 @@ function placeObjectsAtSize(sizeId) {
 
   var buffer = 1.2;
   var size = sizes[sizeId];
-  var objectSize = sizeWidths[sizeId] * 1.4;
+  var objectSize = sizeWidths[sizeId] * 1.5;
   var min_x = 0;
   var max_x = winWidth - objectSize;
   var min_y = $('#header').height();
-  var max_y = winHeight - objectSize*buffer - $('#footer:visible').height();
+  var max_y = winHeight - objectSize - $('#footer:visible').height();
   var padding_buffer = objectSize / 6;
   var max_tries = 100;
 
@@ -336,16 +336,30 @@ function addPerson(id, info, device) {
   return person;
 }
 
+function setVisibility() {
+  if (view == 'people') {
+    $('.device').hide();
+    $('.person:not(.device)').show();
+    $('#who-what').html('Who');
+  }
+  if (view == 'devices') {
+    $('.person:not(.device)').hide();
+    $('.device').show();
+    $('#who-what').html('What');
+  }
+}
+
 function insertPerson(person) {
   console.log('NEW PERSON');
   updating = true;
   person.addClass(size);
   person.appendTo($('#people'));
+  setVisibility();
 }
 
 function resetPeople() {
   people = [];
-  $('.person').each(function() {
+  $('.person:visible').each(function() {
     people.push($(this));
   });
 }
@@ -367,6 +381,7 @@ function setLabelTops() {
 }
 
 function setHovers() {
+  console.log('SETTING HOVERS');
   $('.person:visible').unbind('mouseenter mouseleave');
 
 	$('.person:visible').hover(function() {
@@ -1406,29 +1421,13 @@ function switchView(newView) {
     $('body').addClass(view);
   }
   
-  if (view == 'people') {
-    setBackground();
-    $('.device').hide();
-    $('.person:not(.device)').show();
-    stopMotion();
-    startWalkers();
-    setHovers();
-    $('#who-what').html('Who');
-  }
-  
-  if (view == 'devices') {
+  if (view == 'people' || view == 'devices') {
     $('#people').show();
     setBackground();
-    $('.person:not(.device)').hide();
-    $('.device').show();
-    if (!deviceInit) {
-      placeObjects();
-      deviceInit = true; 
-    }
+    setVisibility();
+    resetPeople();
     stopMotion();
-    startWalkers();
-    setHovers();
-    $('#who-what').html('What');
+    initObjects();
   }
   
   if (view == 'place') {
@@ -1482,9 +1481,10 @@ function refresh() {
     $.each(people, function(index, person) {
       if (ids.indexOf(person.attr('id')) < 0) { // person no longer here
         console.log('PERSON GONE');
+        console.log(person.attr('id'));
         console.log(person.data('name'));
         person.remove();
-        updating = true;
+        if (person.is(':visible')) updating = true;
       } else {
         $('.label', person).removeAttr('style');
         if (person.hasClass('hover')) {
@@ -1493,6 +1493,7 @@ function refresh() {
       }
     });
     if (updating) {
+      console.log('UPDATING');
       resetPeople();
       var oldSize = size;
       calculateSize();
@@ -1524,7 +1525,7 @@ function parseJSON(data, refreshing) {
             url: thisItem['url'],
             dataType: 'json',
             success: function(info) {
-              console.log(info);
+              //console.log(info);
               
               if (info.hasOwnProperty('person')) ids.push('person'+id);
               if (info.hasOwnProperty('device')) ids.push('device'+id);
@@ -1532,18 +1533,18 @@ function parseJSON(data, refreshing) {
               if (info.hasOwnProperty('person') && $('#person'+id).length == 0) {
                 var person = addPerson('person'+id, info.person);
                 if (refreshing && person) insertPerson(person);
-                console.log('added ' + id);
+                //console.log('added ' + id);
               }
               
               if (info.hasOwnProperty('device') && $('#device'+id).length == 0) {
                 var device = addPerson('device'+id, info.device, true);
                 if (refreshing && device) insertPerson(device);
-                console.log('added ' + id);
-                ids.push(id);
+                //console.log('added ' + id);
               }
             },
             async: false
         });
+        //console.log(ids);
       }
     });
   } else {
@@ -1628,6 +1629,7 @@ $(document).ready(function(){
 	hashtags = [];
 	sortedHashtags = [];
 	lastRandomBoxNum = -1;
+	ids = [];
 	
 	//jsonURL = $('body').data('json');
   //jsonURL = getJsonUrl();
