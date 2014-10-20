@@ -388,6 +388,7 @@ function setHovers() {
   $('.person:visible').unbind('mouseenter mouseleave');
 
 	$('.person:visible').hover(function() {
+	  console.log('in hover');
 	  if (overlayMode) return false;
 	  
 	  console.log('hover');
@@ -487,6 +488,7 @@ function hideOverlay(person) {
     $('.job').remove();
     //$('.degree').remove();
     $('#overlay').css({width: '300px', opacity: 0.8});
+    $('#iframe').attr('src', '');
     $('#iframe').hide();
   });
   $('#arrow').fadeOut(500);
@@ -496,7 +498,7 @@ function hideOverlay(person) {
   if (mode == 'mobile') {
     var centeredPos = person.offset().left + person.outerWidth() - leftOverhang;
     $('#footer').show();
-    $('.person:not(#'+person.attr('id')+'):visible').show();
+    $('.person:not(.device)').show();
     cssReset = {position: 'relative', top: 0, left: 0, borderWidth: person.data('origBorder'), marginBottom: person.data('origMarginBottom')};
     person.css(cssReset);
     console.log(person.data('origScroll'));
@@ -531,6 +533,7 @@ function setOverlayDimensions(overlayType) {
 function openOverlay(overlayType) {
   setOverlayDimensions(overlayType);
   var scrollable = true;
+  var showIframe = false;
   if (overlayType == 'api') {
     var contentHeight = $('#overlay .'+overlayService).height() + $('#overlay .header').height() + 15;
     var minHeight = 90;
@@ -553,12 +556,12 @@ function openOverlay(overlayType) {
     }
     $('#overlay .header').hide();
     $('#overlay iframe').css({height: overlayHeight-verticalMargin+'px', margin: '10px 0'});
-    $('#iframe').show();
   }
   console.log('scrollable: ' + scrollable);
   $('#overlay').removeClass('scrollable');
   $('#overlay').animate(css, 500, 'easeInOutCubic', function(){
     $('#overlay .loading').fadeOut(500, function() {
+      if (overlayType != 'api') $('#iframe').show();
       if (overlayType != 'fullscreen') $('#overlay .header').fadeIn(500);
       $('#overlay .'+overlayService).fadeIn(500);
       if (scrollable && overlayType == 'api') {
@@ -1393,6 +1396,10 @@ function mobileButtons() {
       $('#footer').fadeIn(200);
       $('#'+view).fadeIn(200, function() {
         if (view == 'place' && !placeViewInit) initPlaceView();
+        if (view == 'people') {
+          resetPeople();
+          initObjects();
+        }
       });
     });
     viewButtons();
@@ -1401,10 +1408,10 @@ function mobileButtons() {
 
 function initPlaceView() {
   if (mode != 'mobile') placeSocialBoxes();
-//  $.getJSON('/'+placeName+'/recent', function(data) {
-//    $.each(data, function(index, object) {
-//      addTwitterUser(object['twitterPersonalScreenName']);
-//    });
+  $.getJSON('/'+placeName+'/recent', function(data) {
+    $.each(data, function(index, object) {
+      addTwitterUser(object['twitterPersonalScreenName']);
+    });
     console.log(twitters);
     //twitters = ['bogdream'];
     if (mode != 'mobile') showNewsFeed();
@@ -1415,7 +1422,7 @@ function initPlaceView() {
     if (mode != 'mobile') var socialRefresher = setInterval(refreshSocial, 5000);
     if (mode != 'mobile') var tweetCollector = setInterval(collectTweets, 60000);
     placeViewInit = true;
-//  });
+  });
 }
 
 function switchView(newView) {
