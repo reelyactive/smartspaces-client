@@ -322,8 +322,6 @@ body.mobile #footer .button {
 .person {
   z-index: 10;
   position: absolute;
-  left: -1000px;
-  top: -1000px;
   text-align: center;
   -moz-background-clip: padding;     /* Firefox 3.6 */
   -webkit-background-clip: padding;  /* Safari 4? Chrome 6? */
@@ -331,6 +329,11 @@ body.mobile #footer .button {
   background-size: cover;
   background-repeat: no-repeat;
   background-image: url(dummy-avatar.png);
+}
+
+body.desktop .person {
+  left: -1000px;
+  top: -1000px;
 }
 
 .device {
