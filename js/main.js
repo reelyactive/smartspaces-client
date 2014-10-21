@@ -314,7 +314,7 @@ function addPerson(id, info, device) {
   $.each(services, function(serviceID, service) {
     if (info[service.attributeName]) {
       person.data(service.attributeName, info[service.attributeName]);
-      var thisIcon = $('<div class="icon" />');
+      var thisIcon = $('<a class="icon" />');
       thisIcon.html(service.name.substr(0,2));
       thisIcon.data('attributeName', service.attributeName);
       thisIcon.data('overlay', service.displayType);
@@ -640,10 +640,11 @@ function getOverlayData(icon, person) {
     
     overlayService = icon.data('attributeName');
     var retrievalMode = icon.data('retrievalMode');
+    var url = icon.data('url');
     $('#overlay .header .name').html(person.data('name'));
-    $('#permalink').attr('href', icon.data('url'));
+    $('#permalink').attr('href', url);
     if (retrievalMode == 'proxy') {
-      $.post('/remote', { url: icon.data('url') }, function(data) {
+      $.post('/remote', { url: url }, function(data) {
         console.log(data);
         $('#iframe').attr('src', '/remote/'+data.hash);
         console.log('OVERLAY DATA TYPE' + icon.data('overlay'));
@@ -656,9 +657,38 @@ function getOverlayData(icon, person) {
   }
 }
 
+function isLoadable(url) {
+  var loadable = true;
+  $.ajax({
+      type: 'POST',
+      url: '/loadable',
+      data: { url: url },
+      dataType: 'json',
+      success: function(data) {
+        console.log(url);
+        console.log(data);
+        loadable = data.loadable == 'true';
+      },
+      async: false
+  });
+  return loadable;
+}
+
 function instrumentIcons() {
   $('.icon').unbind('click');
-  $('.icon').click(function() {
+  if (mode != 'mobile') {
+    $('.icon').each(function() {
+      if ($(this).data('overlay')=='fullscreen' && $(this).data('retrievalMode')!='proxy' && !isLoadable($(this).data('url'))) {
+        $(this).attr('href', $(this).data('url'));
+        $(this).attr('target', '_blank');
+        $(this).addClass('newtab');
+        $(this).click(function() {
+          hideOverlay($(this).parent());
+        });
+      }
+    });
+  }
+  $('.icon:not(.newtab)').click(function() {
     var person = $(this).parent();
     
     if (overlayMode && $(this).hasClass(overlayService+'-icon')) {
@@ -1616,6 +1646,8 @@ $(document).ready(function(){
 	placeViewInit = false;
 	leftOverhang = 60;
 	deviceInit = false;
+	refreshInterval = 60;
+	ambientCycleInterval = 10;
 	
 	view = getParam('view');
   if (view.length == 0) view = 'people'; // default view
@@ -1631,11 +1663,6 @@ $(document).ready(function(){
   
   $('body').addClass(view);
   $('body').addClass(mode);
-  
-  if (view == 'people') {
-    setBackground();
-    var refresher = setInterval(refresh, 60000);
-  }
 	
 	socialColors = ['green', 'red', 'orange', 'purple', 'blue'];
 	twitters = [];
@@ -1674,6 +1701,37 @@ $(document).ready(function(){
       },
       async: false
   });
+  
+  settings = {};
+  $.ajax({
+      type: 'GET',
+      url: '/settings',
+      dataType: 'json',
+      success: function(data) {
+        console.log(data);
+        $.each(data, function(id, info) {
+          settings[id] = info;
+        });
+      },
+      async: false
+  });
+  
+  if (settings.hasOwnProperty('refreshInterval')) {
+    refreshInterval = settings.refreshInterval;
+  }
+  console.log('REFRESH INTERVAL');
+  console.log(refreshInterval);
+  
+  if (settings.hasOwnProperty('ambientCycleInterval')) {
+    ambientCycleInterval = settings.ambientCycleInterval;
+  }
+  console.log('AMBIENT CYCLE INTERVAL');
+  console.log(ambientCycleInterval);
+  
+  if (view == 'people') {
+     setBackground();
+     var refresher = setInterval(refresh, refreshInterval*1000);
+   }
   
   services = {};
   $.ajax({
@@ -1733,7 +1791,7 @@ $(document).ready(function(){
     }
 
     if (mode == 'ambient') {
-      var ambientCycler = setInterval(cycleAmbient, 10000);
+      var ambientCycler = setInterval(cycleAmbient, ambientCycleInterval*1000);
     }
   });
 });

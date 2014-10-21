@@ -322,6 +322,8 @@ body.mobile #footer .button {
 .person {
   z-index: 10;
   position: absolute;
+  left: -1000px;
+  top: -1000px;
   text-align: center;
   -moz-background-clip: padding;     /* Firefox 3.6 */
   -webkit-background-clip: padding;  /* Safari 4? Chrome 6? */
@@ -442,6 +444,8 @@ body.mobile #footer .button {
   display: none;
   position: absolute;
   font-weight: 800;
+  text-decoration: none !important;
+  color: black !important;
 }
 
 .icon:not(.twitter-icon) {
@@ -458,7 +462,7 @@ body.mobile #footer .button {
   background: -ms-linear-gradient(top, #676767 0%,#000000 100%); /* IE10+ */
   background: linear-gradient(to bottom, #676767 0%,#000000 100%); /* W3C */
   filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#676767', endColorstr='#000000',GradientType=0 ); /* IE6-9 */
-  color: white;
+  color: white !important;
 }
 
 .twitter-icon {
