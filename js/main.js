@@ -179,7 +179,7 @@ function stopMotion() {
 function startWalkers() {
   if (mode == 'mobile') return false;
   allWalkers = [];
-  $('.person').each(function() {
+  $('.person:visible').each(function() {
     var thisWalker = generateWalker($(this)[0]);
   	thisWalker.start();
   	allWalkers.push(thisWalker);
@@ -212,13 +212,13 @@ function placeObjectsAtSize(sizeId) {
   changeAllPersonsSize(size);
   window.sizeIndex = sizeId;
 
-  var buffer = 1.3;
+  var buffer = 1.2;
   var size = sizes[sizeId];
-  var objectSize = sizeWidths[sizeId] * 1.4;
+  var objectSize = sizeWidths[sizeId] * 1.5;
   var min_x = 0;
   var max_x = winWidth - objectSize;
   var min_y = $('#header').height();
-  var max_y = winHeight - objectSize*buffer - $('#footer:visible').height();
+  var max_y = winHeight - objectSize - $('#footer:visible').height();
   var padding_buffer = objectSize / 6;
   var max_tries = 100;
 
@@ -232,7 +232,7 @@ function placeObjectsAtSize(sizeId) {
 
   var maxObjects =  maxColumns * maxRows;
 
-  var persons = $('.person');
+  var persons = $('.person:visible');
   if (persons.length > maxRows * maxColumns) return false;
   console.log("object area", objectSize);
 
@@ -246,7 +246,7 @@ function placeObjectsAtSize(sizeId) {
     var person = $(orderingArray[i]);
     var x = i % maxColumns;
     var y = Math.floor(i / maxColumns);
-    person.css({left: x * objectSize + leftOffset, top: y * objectSize + topOffset , padding: padding_buffer});
+    person.css({left: x * objectSize + leftOffset, top: y * objectSize + topOffset});
   }
 
   return true;
@@ -268,7 +268,7 @@ function spiralCoordinates(i) {
 }
 
 function changeAllPersonsSize(size) {
-    $('.person').each(function() {
+    $('.person:visible').each(function() {
       $(this).removeClass(sizes.join(' '));
       $(this).addClass(size);
     });
@@ -293,36 +293,76 @@ function addTwitterUser(username) {
   }
 }
 
-function addPerson(id, info) {
+function addPerson(id, info, device) {
   var person = $('#person-dummy').clone();
   var name = info.firstName + ' ' + info.lastName;
   var company = info.companyName;
   person.removeClass('dummy');
   person.addClass('person');
+  if (device) {
+    person.addClass('device');
+    name = info.model;
+    company = info.manufacturer;
+  }
   person.attr('id', id);
   if (info.portraitImageUrl != undefined) { person.css('background-image', 'url('+info.portraitImageUrl+')'); }
   person.data('name', name);
-  if (info.twitterPersonalScreenName) { person.data('twitter', info.twitterPersonalScreenName); }
-  if (info.linkedInPublicUrl) { person.data('linkedin', info.linkedInPublicUrl); }
+  if (info.twitterPersonalScreenName) {
+    person.data('twitter', info.twitterPersonalScreenName);
+    addTwitterUser(info.twitterPersonalScreenName);
+  }
+  $.each(services, function(serviceID, service) {
+    if (info[service.attributeName]) {
+      person.data(service.attributeName, info[service.attributeName]);
+      var thisIcon = $('<a class="icon" />');
+      thisIcon.html(service.name.substr(0,2));
+      thisIcon.data('attributeName', service.attributeName);
+      thisIcon.data('overlay', service.displayType);
+      thisIcon.data('retrievalMode', service.retrievalMode);
+      thisIcon.data('service', service.name);
+      thisIcon.addClass(service.displayType + '-icon');
+      var urlStructure = service.urlStructure;
+      var attributeValue = person.data(service.attributeName);
+      var thisUrl = urlStructure.replace('%attribute%', attributeValue);
+      console.log(thisUrl);
+      thisIcon.data('url', thisUrl);
+      thisIcon.insertAfter($('.icon', person).last());
+    }
+  });
   if (info.companyLogoUrl) { person.data('company-logo', info.companyLogoUrl); }
   if (info.companyUrl) { person.data('company-link', info.companyUrl); }
   $('.name', person).html(name);
   $('.company', person).html(company);
   people.push(person);
-  population++;
   return person;
+}
+
+function setVisibility() {
+  if (view == 'people') {
+    $('.device').hide();
+    $('.person:not(.device)').show();
+    $('#who-what').html('Who');
+  }
+  if (view == 'devices') {
+    $('.person:not(.device)').hide();
+    $('.device').show();
+    $('#who-what').html('What');
+  }
 }
 
 function insertPerson(person) {
   console.log('NEW PERSON');
-  updating = true;
+  console.log(person.attr('id'));
+  console.log(person.data('name'));
   person.addClass(size);
   person.appendTo($('#people'));
+  setVisibility();
+  if (person.is(':visible')) updating = true;
 }
 
 function resetPeople() {
   people = [];
-  $('.person').each(function() {
+  $('.person:visible').each(function() {
     people.push($(this));
   });
 }
@@ -344,9 +384,11 @@ function setLabelTops() {
 }
 
 function setHovers() {
-  $('.person').unbind('mouseenter mouseleave');
+  console.log('SETTING HOVERS');
+  $('.person:visible').unbind('mouseenter mouseleave');
 
-	$('.person').hover(function() {
+	$('.person:visible').hover(function() {
+	  console.log('in hover');
 	  if (overlayMode) return false;
 	  
 	  console.log('hover');
@@ -392,27 +434,22 @@ function setHovers() {
 	  $(this).animate(hoverAnimation, 300, function() {
 	    if ($(this).hasClass('hover')) {
 	      console.log('placing icons');
-	      var twitterAngle = 0;
+	      var angle = 0;
+	      var delta = 30;
   	    if ($(this).data('twitter')) {
-  	      twitterAngle = 30;
-  	      var twitterPos = getIconPosition(twitterAngle, newBorder, iconSize);
+  	      angle += delta;
+  	      var pos = getIconPosition(angle, newBorder, iconSize);
     	    var twitter = $('.twitter-icon', $(this));
-    	    twitter.css({width: iconSize+'px', height: iconSize+'px', left: twitterPos.left+'px', top: twitterPos.top+'px', borderRadius: iconSize+'px'});
+    	    twitter.css({width: iconSize+'px', height: iconSize+'px', left: pos.left+'px', top: pos.top+'px', borderRadius: iconSize+'px'});
   	      twitter.fadeIn(300);
   	    }
-  	    /*
-  	    var collisions = twitter.collision('.avoid');
-  	    console.log('TWITTER COLLISIONS: ' + collisions.length);
-  	    console.log(twitter.visible());
-  	    */
-  	    if ($(this).data('linkedin')) {
-    	    var linkedinAngle = twitterAngle + 30;
-    	    var linkedinPos = getIconPosition(linkedinAngle, newBorder, iconSize);
-    	    var linkedin = $('.linkedin-icon', $(this));
-    	    linkedin.data('url', $(this).data('linkedin'));
-    	    linkedin.css({width: iconSize+'px', height: iconSize+'px', left: linkedinPos.left+'px', top: linkedinPos.top+'px', borderRadius: iconSize+'px'});
-          linkedin.fadeIn(300);
-        }
+  	    
+  	    $('.icon:not(.twitter-icon)', $(this)).each(function() {
+  	      angle += delta;
+  	      pos = getIconPosition(angle, newBorder, iconSize);
+  	      $(this).css({width: iconSize+'px', height: iconSize+'px', fontSize: iconSize/2+'px', lineHeight: iconSize+'px', left: pos.left+'px', top: pos.top+'px', borderRadius: iconSize+'px'});
+  	      $(this).fadeIn(300);
+  	    });
       }
 	  });
 	  console.log('done hover');
@@ -451,6 +488,8 @@ function hideOverlay(person) {
     $('.job').remove();
     //$('.degree').remove();
     $('#overlay').css({width: '300px', opacity: 0.8});
+    $('#iframe').attr('src', '');
+    $('#iframe').hide();
   });
   $('#arrow').fadeOut(500);
   $('.icon', person).fadeOut(300);
@@ -459,13 +498,13 @@ function hideOverlay(person) {
   if (mode == 'mobile') {
     var centeredPos = person.offset().left + person.outerWidth() - leftOverhang;
     $('#footer').show();
-    $('.person:not(#'+person.attr('id')+')').show();
+    $('.person:not(.device)').show();
     cssReset = {position: 'relative', top: 0, left: 0, borderWidth: person.data('origBorder'), marginBottom: person.data('origMarginBottom')};
     person.css(cssReset);
     console.log(person.data('origScroll'));
     $(window).scrollTop(person.data('origScroll'));
   } else {
-    $('.person:not(#'+person.attr('id')+')').fadeTo(500, 1.0);
+    $('.person:not(#'+person.attr('id')+'):visible').fadeTo(500, 1.0);
     cssReset = {left: person.data('origX'), top: person.data('origY'), borderWidth: person.data('origBorder')};
     person.animate(cssReset, 300, function() {
       resumeMotion();
@@ -494,7 +533,8 @@ function setOverlayDimensions(overlayType) {
 function openOverlay(overlayType) {
   setOverlayDimensions(overlayType);
   var scrollable = true;
-  if (overlayType != 'fullscreen') {
+  var showIframe = false;
+  if (overlayType == 'api') {
     var contentHeight = $('#overlay .'+overlayService).height() + $('#overlay .header').height() + 15;
     var minHeight = 90;
     if (contentHeight < minHeight) { contentHeight = minHeight; }
@@ -508,17 +548,23 @@ function openOverlay(overlayType) {
     }
     var css = {height: overlayHeight, top: overlayTop, borderRadius: '10px'};
   } else {
-    var css = {height: overlayHeight, width: overlayWidth, left: '100px', top: overlayTop, borderRadius: '10px', opacity: 0.9};
+    var css = {height: overlayHeight, width: overlayWidth, top: overlayTop, borderRadius: '10px', opacity: 0.9};
+    var verticalMargin = 50;
+    if (overlayType == 'fullscreen') {
+      css.left = '100px';
+      var verticalAdjust = 20;
+    }
     $('#overlay .header').hide();
-    $('#overlay iframe').css({height: overlayHeight-20+'px', margin: '10px 0'});
+    $('#overlay iframe').css({height: overlayHeight-verticalMargin+'px', margin: '10px 0'});
   }
   console.log('scrollable: ' + scrollable);
   $('#overlay').removeClass('scrollable');
   $('#overlay').animate(css, 500, 'easeInOutCubic', function(){
     $('#overlay .loading').fadeOut(500, function() {
+      if (overlayType != 'api') $('#iframe').show();
       if (overlayType != 'fullscreen') $('#overlay .header').fadeIn(500);
       $('#overlay .'+overlayService).fadeIn(500);
-      if (scrollable && overlayType == 'inline') {
+      if (scrollable && overlayType == 'api') {
         $('#overlay').addClass('scrollable');
         console.log('added scrollable');
       }
@@ -560,7 +606,7 @@ function showOverlay(person, arrowLeft, arrowTop, overlayLeft, overlayType) {
   });
   if (overlayType != 'fullscreen') $('#arrow').fadeIn(500);
   if (mode != 'mobile') {
-    $('.person:not(#'+person.attr('id')+')').fadeTo(500, 0.3);
+    $('.person:not(#'+person.attr('id')+'):visible').fadeTo(500, 0.3);
     $('#title').fadeTo(500, 0.3); 
   }
 }
@@ -592,19 +638,57 @@ function getOverlayData(icon, person) {
     
   } else {
     
-    overlayService = 'linkedin';
-    var publicURL = person.data('linkedin').replace('ca.linkedin', 'www.linkedin');
-    $.post('/remote', { url: publicURL }, function(data) {
-      console.log(data);
-      $('#linkedin-iframe').attr('src', '/remote/'+data.hash);
+    overlayService = icon.data('attributeName');
+    var retrievalMode = icon.data('retrievalMode');
+    var url = icon.data('url');
+    $('#overlay .header .name').html(person.data('name'));
+    $('#permalink').attr('href', url);
+    if (retrievalMode == 'proxy') {
+      $.post('/remote', { url: url }, function(data) {
+        console.log(data);
+        $('#iframe').attr('src', '/remote/'+data.hash);
+        console.log('OVERLAY DATA TYPE' + icon.data('overlay'));
+        openOverlay(icon.data('overlay'));
+      }, 'json');
+    } else {
+      $('#iframe').attr('src', icon.data('url'));
       openOverlay(icon.data('overlay'));
-    }, 'json');
+    }
   }
+}
+
+function isLoadable(url) {
+  var loadable = true;
+  $.ajax({
+      type: 'POST',
+      url: '/loadable',
+      data: { url: url },
+      dataType: 'json',
+      success: function(data) {
+        console.log(url);
+        console.log(data);
+        loadable = data.loadable == 'true';
+      },
+      async: false
+  });
+  return loadable;
 }
 
 function instrumentIcons() {
   $('.icon').unbind('click');
-  $('.icon').click(function() {
+  if (mode != 'mobile') {
+    $('.icon').each(function() {
+      if ($(this).data('overlay')=='fullscreen' && $(this).data('retrievalMode')!='proxy' && !isLoadable($(this).data('url'))) {
+        $(this).attr('href', $(this).data('url'));
+        $(this).attr('target', '_blank');
+        $(this).addClass('newtab');
+        $(this).click(function() {
+          hideOverlay($(this).parent());
+        });
+      }
+    });
+  }
+  $('.icon:not(.newtab)').click(function() {
     var person = $(this).parent();
     
     if (overlayMode && $(this).hasClass(overlayService+'-icon')) {
@@ -624,8 +708,8 @@ function instrumentIcons() {
         loadingType = 'tweets';
         headerType = 'Twitter';
       } else {
-        loadingType = 'LinkedIn';
-        headerType = 'LinkedIn';
+        loadingType = $(this).data('service');
+        headerType = $(this).data('service');
       }
       
       $('#overlay .loading .type').html(loadingType);
@@ -724,8 +808,8 @@ function hideLoader() {
 
 function initObjects() {
   console.log('INITIALIZING');
-  placeObjects();
   hideLoader();
+  placeObjects();
   revealObjects();
   startWalkers();
   setLabelTops();
@@ -743,7 +827,8 @@ function calculateSize() {
   }
   $.each(sizeWidths, function(index, width) {
     var maxPop = (winWidth * winHeight) / (6 * width * width);
-    if (maxPop > population) {
+    var currentPop = $('.person:visible').length;
+    if (maxPop > currentPop) {
       size = sizes[index];
       sizeIndex = sizes.indexOf(size);
       console.log('size found: ' + size);
@@ -1236,7 +1321,7 @@ function collectTweets() {
   $.each(twitters, function(index, username) {
     $.ajax({
         type: 'GET',
-        url: 'twitter/'+username,
+        url: '/twitter/'+username,
         dataType: 'json',
         success: function(data) {
           var twitterJSON = processCachedTweets(data, username);
@@ -1298,7 +1383,7 @@ function generateTweetDiv(tweet, username) {
 function showNewsFeed() {
   if (placeInfo.hasOwnProperty('twitter')) {
     var username = placeInfo.twitter;
-    $.getJSON('twitter/'+username, function(data) {
+    $.getJSON('/twitter/'+username, function(data) {
       var twitterJSON = processCachedTweets(data, username);
       if (length(twitterJSON) > 0) {
         $.each(twitterJSON, function(index, tweet) {
@@ -1341,6 +1426,10 @@ function mobileButtons() {
       $('#footer').fadeIn(200);
       $('#'+view).fadeIn(200, function() {
         if (view == 'place' && !placeViewInit) initPlaceView();
+        if (view == 'people') {
+          resetPeople();
+          initObjects();
+        }
       });
     });
     viewButtons();
@@ -1374,12 +1463,17 @@ function switchView(newView) {
   $('#'+view).show();
   
   if (mode != 'mobile') {
-    $('body').removeClass('people place');
+    $('body').removeClass('people place devices');
     $('body').addClass(view);
   }
   
-  if (view == 'people') {
+  if (view == 'people' || view == 'devices') {
+    $('#people').show();
     setBackground();
+    setVisibility();
+    resetPeople();
+    stopMotion();
+    initObjects();
   }
   
   if (view == 'place') {
@@ -1410,7 +1504,7 @@ function getAreaIdentifier() {
   var identifier = window.location.hash.slice(1);
   identifier = identifier || window.location.pathname.slice(1);
 
-  return identifier || null;
+  return identifier.replace(/\/$/, "") || null;
 }
 
 function getJsonUrl() {
@@ -1429,13 +1523,15 @@ function refresh() {
   $.getJSON(jsonURL, function(data) {
     stopMotion();
     parseJSON(data, true);
+    console.log(ids);
+    resetPeople();
     $.each(people, function(index, person) {
       if (ids.indexOf(person.attr('id')) < 0) { // person no longer here
         console.log('PERSON GONE');
+        console.log(person.attr('id'));
         console.log(person.data('name'));
+        if (person.is(':visible')) updating = true;
         person.remove();
-        population--;
-        updating = true;
       } else {
         $('.label', person).removeAttr('style');
         if (person.hasClass('hover')) {
@@ -1444,7 +1540,7 @@ function refresh() {
       }
     });
     if (updating) {
-      resetPeople();
+      console.log('UPDATING');
       var oldSize = size;
       calculateSize();
       if (size != oldSize) {
@@ -1464,40 +1560,74 @@ function refresh() {
 
 function parseJSON(data, refreshing) {
   var hyperlocal = false;
-  $.each(data, function(thisID, thisItem) {
-    if (thisItem.hasOwnProperty('url')) hyperlocal = true;
-  });
-  
   ids = [];
-  if (hyperlocal) {
-    $.each(data, function(thisID, thisItem) {
+  
+  if (data.hasOwnProperty('devices')) {
+    $('#devices-button').removeClass('hidden');
+    $.each(data.devices, function(id, thisItem) {
       if (thisItem.hasOwnProperty('url')) {
-        var id = thisItem['value'];
-        ids.push(id);
-        if ($('#'+id).length == 0) { // new person
-          $.ajax({
-              type: 'GET',
-              url: thisItem['url'],
-              dataType: 'json',
-              success: function(info) {
-                console.log(info);
-                var person = addPerson(id, info);
+        $.ajax({
+            type: 'GET',
+            url: thisItem['url'],
+            dataType: 'json',
+            success: function(info) {
+              //console.log(info);
+              
+              if (info.hasOwnProperty('person')) ids.push('person'+id);
+              if (info.hasOwnProperty('device')) ids.push('device'+id);
+              
+              if (info.hasOwnProperty('person') && $('#person'+id).length == 0) {
+                var person = addPerson('person'+id, info.person);
                 if (refreshing && person) insertPerson(person);
-                console.log('added ' + id);
-              },
-              async: false
-          });
-        }
-      }
-    }); 
-  } else {
-    $.each(data, function(id, info) {
-      ids.push(id);
-      if ($('#'+id).length == 0) { // new person
-        var person = addPerson(id, info);
-        if (refreshing && person) insertPerson(person);
+                //console.log('added ' + id);
+              }
+              
+              if (info.hasOwnProperty('device') && $('#device'+id).length == 0) {
+                var device = addPerson('device'+id, info.device, true);
+                if (refreshing && device) insertPerson(device);
+                //console.log('added ' + id);
+              }
+            },
+            async: false
+        });
+        //console.log(ids);
       }
     });
+  } else {
+    $.each(data, function(thisID, thisItem) {
+      if (thisItem.hasOwnProperty('url')) hyperlocal = true;
+    });
+
+    if (hyperlocal) {
+      $.each(data, function(thisID, thisItem) {
+        if (thisItem.hasOwnProperty('url')) {
+          var id = thisItem['value'];
+          ids.push(id);
+          if ($('#'+id).length == 0) { // new person
+            $.ajax({
+                type: 'GET',
+                url: thisItem['url'],
+                dataType: 'json',
+                success: function(info) {
+                  console.log(info);
+                  var person = addPerson(id, info);
+                  if (refreshing && person) insertPerson(person);
+                  console.log('added ' + id);
+                },
+                async: false
+            });
+          }
+        }
+      }); 
+    } else {
+      $.each(data, function(id, info) {
+        ids.push(id);
+        if ($('#'+id).length == 0) { // new person
+          var person = addPerson(id, info);
+          if (refreshing && person) insertPerson(person);
+        }
+      });
+    } 
   }
 }
 
@@ -1515,6 +1645,9 @@ $(document).ready(function(){
 	moving = false;
 	placeViewInit = false;
 	leftOverhang = 60;
+	deviceInit = false;
+	refreshInterval = 60;
+	ambientCycleInterval = 10;
 	
 	view = getParam('view');
   if (view.length == 0) view = 'people'; // default view
@@ -1530,11 +1663,6 @@ $(document).ready(function(){
   
   $('body').addClass(view);
   $('body').addClass(mode);
-  
-  if (view == 'people') {
-    setBackground();
-    var refresher = setInterval(refresh, 60000);
-  }
 	
 	socialColors = ['green', 'red', 'orange', 'purple', 'blue'];
 	twitters = [];
@@ -1544,13 +1672,13 @@ $(document).ready(function(){
 	hashtags = [];
 	sortedHashtags = [];
 	lastRandomBoxNum = -1;
+	ids = [];
 	
 	//jsonURL = $('body').data('json');
   //jsonURL = getJsonUrl();
   placeName = getAreaIdentifier();
   
 	people = [];
-  population = 0;
   
   loading = true;
   var loader = $('#loading');
@@ -1570,6 +1698,49 @@ $(document).ready(function(){
         $.each(data, function(id, info) {
           placeInfo[id] = info;
         });
+      },
+      async: false
+  });
+  
+  settings = {};
+  $.ajax({
+      type: 'GET',
+      url: '/settings',
+      dataType: 'json',
+      success: function(data) {
+        console.log(data);
+        $.each(data, function(id, info) {
+          settings[id] = info;
+        });
+      },
+      async: false
+  });
+  
+  if (settings.hasOwnProperty('refreshInterval')) {
+    refreshInterval = settings.refreshInterval;
+  }
+  console.log('REFRESH INTERVAL');
+  console.log(refreshInterval);
+  
+  if (settings.hasOwnProperty('ambientCycleInterval')) {
+    ambientCycleInterval = settings.ambientCycleInterval;
+  }
+  console.log('AMBIENT CYCLE INTERVAL');
+  console.log(ambientCycleInterval);
+  
+  if (view == 'people') {
+     setBackground();
+     var refresher = setInterval(refresh, refreshInterval*1000);
+   }
+  
+  services = {};
+  $.ajax({
+      type: 'GET',
+      url: '/'+placeName+'/services',
+      dataType: 'json',
+      success: function(data) {
+        console.log(data);
+        services = data;
       },
       async: false
   });
@@ -1620,7 +1791,7 @@ $(document).ready(function(){
     }
 
     if (mode == 'ambient') {
-      var ambientCycler = setInterval(cycleAmbient, 10000);
+      var ambientCycler = setInterval(cycleAmbient, ambientCycleInterval*1000);
     }
   });
 });
