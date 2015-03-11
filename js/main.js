@@ -18,6 +18,14 @@ function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
+function pairwise(list) {
+  if (list.length < 2) { return []; }
+  var first = list[0],
+      rest  = list.slice(1),
+      pairs = rest.map(function (x) { return [first, x]; });
+  return pairs.concat(pairwise(rest));
+}
+
 String.prototype.parseURL = function() {
   return this.replace(/[A-Za-z]+:\/\/[A-Za-z0-9-_]+\.[A-Za-z0-9-_:%&~\?\/.=]+/g, function(url) {
 		return '<a href="'+url+'" target="_blank">'+url+'</a>';
@@ -137,7 +145,7 @@ AnimateWalker.prototype = {
 		var newX = point.x + this.startX;
 		var newY = point.y + this.startY;
 		$(this.walker).css({left: newX, top: newY});
-		
+		redrawLines();
 	},
 
 	// Restart animation once it was finished
@@ -295,6 +303,7 @@ function addTwitterUser(username) {
 
 function addPerson(id, info, device) {
   var person = $('#person-dummy').clone();
+  person.data('json', info);
   var name = info.firstName + ' ' + info.lastName;
   var company = info.companyName;
   person.removeClass('dummy');
@@ -334,7 +343,170 @@ function addPerson(id, info, device) {
   $('.name', person).html(name);
   $('.company', person).html(company);
   people.push(person);
+  console.log('Done adding person.');
   return person;
+}
+
+function getConnections() {
+  var JSONs = [];
+  $('.person:not(.device)').each(function() {
+    var thisJSON = $(this).data('json');
+    thisJSON.id = $(this).attr('id');
+    JSONs.push(thisJSON);
+  });
+  var excluded = [
+    'id', 'companyLogoUrl', 'companyUrl', 'companyTitle', 'facebookUsername',
+    'firstName', 'lastName', 'linkedInPublicUrl', 'twitterPersonalScreenName'
+  ];
+  var connections = new findSimilar(JSONs, excluded);
+  //console.log(connections);
+  return connections;
+}
+
+function drawConnections() {
+  if (mode == 'mobile') return false;
+  paper = Raphael(document.getElementById('svg'), winWidth, winHeight);
+  paper.clear();
+  connectionLines = [];
+  var connections = getConnections();
+  for (var key in connections) {
+     var connection = connections[key];
+     for (var similarity in connection) {
+       var links = pairwise(connection[similarity]);
+       $(links).each(function() {
+         var lineIndex = getLineIndex(this[0], this[1]);
+         if (lineIndex > 0) { // line already exists
+           connectionLines[lineIndex].similarities.push(similarity);
+         } else {
+           var connectionLine = drawLine(paper, this[0], this[1], similarity);
+           connectionLines.push(connectionLine);
+         }
+       });
+     }
+  }
+}
+
+function getLineIndex(id1, id2) {
+  var lineIndex = 0;
+  $(connectionLines).each(function(index, line) {
+    if (line.ids.indexOf(id1) > -1 && line.ids.indexOf(id2) > -1)
+      lineIndex = index;
+  });
+  return lineIndex;
+}
+
+function linePoints(person1, person2) {
+  var startPos = person1.offset();
+  var endPos = person2.offset();
+   
+  var startX = startPos.left + (person1.outerWidth() / 2);
+  var startY = startPos.top + (person1.outerHeight() / 2);
+  var endX = endPos.left + (person2.outerWidth() / 2);
+  var endY = endPos.top + (person2.outerHeight() / 2);
+  
+  return [{x: startX, y: startY}, {x: endX, y: endY}];
+}
+
+function linePath(points) {
+  var p1 = points[0];
+  var p2 = points[1];
+  return "M "+p1.x+" "+p1.y+" L "+p2.x+" "+p2.y+" Z";
+}
+
+function addLineToPerson(person, line, id1, id2) {
+  if (typeof person.data('lines') === 'undefined') {
+    var lines = [];
+    person.data('lines', lines);
+  }
+  person.data('lines').push({line: line, id1: id1, id2: id2});
+}
+
+function getPointsFromIds(id1, id2) {
+  var person1 = $('#'+id1);
+  var person2 = $('#'+id2);
+  return linePoints(person1, person2);
+}
+
+function getMidpoint(id1, id2) {
+  var points = getPointsFromIds(id1, id2);
+  var p1 = points[0];
+  var p2 = points[1];
+  return {left: (p1.x+p2.x)/2, top: (p1.y+p2.y)/2};
+}
+
+function getAngle(id1, id2) {
+  var points = getPointsFromIds(id1, id2);
+  var p1 = points[0];
+  var p2 = points[1];
+  var angle = Math.atan((p2.y - p1.y) / (p2.x - p1.x)) * 180 / Math.PI;
+  return angle;
+}
+
+function drawLine(paper, id1, id2, similarity) {
+  var person1 = $('#'+id1);
+  var person2 = $('#'+id2);
+  
+  var points = linePoints(person1, person2);
+  console.log(points);
+  var pathString = linePath(points);
+  var line = paper.path(pathString);
+  line.attr('stroke', '#fff');
+  line.attr('stroke-width', 2);
+  line.attr('stroke-opacity', 0.3);
+  
+  addLineToPerson(person1, line, id1, id2);
+  addLineToPerson(person2, line, id1, id2);
+  
+  return { 
+    line: line,
+    person1: person1,
+    person2: person2,
+    ids: [id1, id2],
+    points: points,
+    similarities: [similarity]
+  };
+}
+
+function highlightConnections(person) {
+  var lines = person.data('lines');
+  $('.label').not($('.label', person)).css('opacity', 0.2);
+  $('.person').not(person).css('opacity', 0.5);
+  paper.forEach(function (el) {
+    el.attr('stroke-opacity', 0.1);
+  });
+  $(lines).each(function() { 
+    console.log(this);
+    this.line.attr('stroke-opacity', 0.9);
+    var labelDiv = $('<div class="connectionLabel"></div>');
+    var connection = connectionLines[getLineIndex(this.id1, this.id2)];
+    connection.person1.css('opacity', 1.0);
+    connection.person2.css('opacity', 1.0);
+    var similarityString = connection.similarities.join(', ');
+    labelDiv.html(similarityString);
+    labelDiv.prependTo($('#svg'));
+    //var angle = getAngle(this.id1, this.id2);
+    labelDiv.css(getMidpoint(this.id1, this.id2));
+    //labelDiv.css('-webkit-transform', 'rotate('+angle+'deg) translate(-50%, -50%)');
+  });
+}
+
+function unhighlightConnections(person) {
+  $('.label').css('opacity', 1.0);
+  $('.person').css('opacity', 1.0);
+  var lines = person.data('lines');
+  paper.forEach(function (el) {
+    el.attr('stroke-opacity', 0.3);
+  });
+  $('.connectionLabel').remove();
+}
+
+function redrawLines() {
+  $(connectionLines).each(function() {
+    var points = linePoints(this.person1, this.person2);
+    var pathString = linePath(points);
+    this.points = points;
+    this.line.attr({path: pathString});
+  });
 }
 
 function setVisibility() {
@@ -393,6 +565,8 @@ function setHovers() {
 	  
 	  console.log('hover');
 	  stopMotion();
+	  
+	  highlightConnections($(this));
 	  
 	  $(this).addClass('hover');
 	  $(this).data('origX', $(this).css('left'));
@@ -457,6 +631,8 @@ function setHovers() {
 	  console.log('unhover');
 	  if (overlayMode) return false;
 	  
+	  unhighlightConnections($(this));
+	  
     $(this).finish();
     $(this).removeClass('hover');
 	  var label = $('.label', this);
@@ -475,6 +651,8 @@ function setHovers() {
 	  $(this).css(cssReset);
 
     resetLabel($(this));
+    
+	  redrawLines();
 	});
 }
 
@@ -815,6 +993,7 @@ function initObjects() {
   setLabelTops();
   setHovers();
   instrumentIcons();
+  drawConnections();
   console.log('DONE INITIALIZING');
   if (blurred) { stopMotion(); }
 }
@@ -1673,6 +1852,7 @@ $(document).ready(function(){
 	sortedHashtags = [];
 	lastRandomBoxNum = -1;
 	ids = [];
+  connectionLines = [];
 	
 	//jsonURL = $('body').data('json');
   //jsonURL = getJsonUrl();
@@ -1814,5 +1994,6 @@ function getWindowDimensions() {
 
 $(window).resize(function() {
   getWindowDimensions();
+  paper.setSize(winWidth, winHeight);
 	if (mode != 'mobile') sizeLayout();
 });
