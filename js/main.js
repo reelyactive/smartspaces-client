@@ -244,6 +244,7 @@ function placeObjectsAtSize(sizeId) {
   if (persons.length > maxRows * maxColumns) return false;
   console.log("object area", objectSize);
 
+  persons = persons.slice(0, maxObjects);
   var orderingArray = persons.toArray().concat(new Array(maxObjects - persons.length));
   shuffle(orderingArray);
 
