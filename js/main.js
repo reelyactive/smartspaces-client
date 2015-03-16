@@ -215,7 +215,7 @@ function shuffle(o){ //v1.0
     return o;
 };
 
-function placeObjectsAtSize(sizeId) {
+function placeObjectsAtSize(sizeId, force) {
   size = sizes[sizeId];
   changeAllPersonsSize(size);
   window.sizeIndex = sizeId;
@@ -241,10 +241,19 @@ function placeObjectsAtSize(sizeId) {
   var maxObjects =  maxColumns * maxRows;
 
   var persons = $('.person:visible');
-  if (persons.length > maxRows * maxColumns) return false;
+  if (!force && persons.length > maxObjects) return false;
   console.log("object area", objectSize);
+  console.log("max objects", maxObjects);
+  
+  if (force && maxObjects < persons.length) {
+    var overflowPersons = persons.slice(maxObjects, persons.length);
+    overflowPersons.each(function() {
+      $(this).hide();
+    });
+  }
 
   persons = persons.slice(0, maxObjects);
+  
   var orderingArray = persons.toArray().concat(new Array(maxObjects - persons.length));
   shuffle(orderingArray);
 
@@ -265,10 +274,10 @@ function placeObjectsAtSize(sizeId) {
 function placeObjects() {
   if (mode == 'mobile') return false;
   for (var sizeIndex = 0; sizeIndex < sizes.length; sizeIndex++) {
-    if (placeObjectsAtSize(sizeIndex)) return;
+    if (placeObjectsAtSize(sizeIndex, false)) return;
   }
   console.log("Could not place properly");
-  placeObjectsAtSize(sizes.length);
+  placeObjectsAtSize(sizes.length-1, true);
 }
 
 function spiralCoordinates(i) {
@@ -350,7 +359,7 @@ function addPerson(id, info, device) {
 
 function getConnections() {
   var JSONs = [];
-  $('.person:not(.device)').each(function() {
+  $('.person:not(.device):visible').each(function() {
     var thisJSON = $(this).data('json');
     thisJSON.id = $(this).attr('id');
     JSONs.push(thisJSON);
