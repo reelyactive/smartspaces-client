@@ -1766,12 +1766,14 @@ function parseJSON(data, refreshing) {
               if (info.hasOwnProperty('device')) ids.push('device'+id);
               
               if (info.hasOwnProperty('person') && $('#person'+id).length == 0) {
+                info.person['cormorant'] = encodeURIComponent(thisItem['url']);
                 var person = addPerson('person'+id, info.person);
                 if (refreshing && person) insertPerson(person);
                 //console.log('added ' + id);
               }
               
               if (info.hasOwnProperty('device') && $('#device'+id).length == 0) {
+                info.device['cormorant'] = encodeURIComponent(thisItem['url']);
                 var device = addPerson('device'+id, info.device, true);
                 if (refreshing && device) insertPerson(device);
                 //console.log('added ' + id);
@@ -1799,6 +1801,7 @@ function parseJSON(data, refreshing) {
                 dataType: 'json',
                 success: function(info) {
                   console.log(info);
+                  info['cormorant'] = encodeURIComponent(thisItem['url']);
                   var person = addPerson(id, info);
                   if (refreshing && person) insertPerson(person);
                   console.log('added ' + id);
