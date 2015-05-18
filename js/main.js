@@ -365,8 +365,10 @@ function getConnections() {
     JSONs.push(thisJSON);
   });
   var excluded = [
-    'id', 'companyLogoUrl', 'companyUrl', 'companyTitle', 'facebookUsername',
-    'firstName', 'lastName', 'linkedInPublicUrl', 'twitterPersonalScreenName'
+    'id', 'blogUrl', 'companyLogoUrl', 'companyUrl', 'defaultMessage',
+    'facebookUsername', 'googlePlusProfileName', 'linkedInPublicUrl',
+    'musicUrl', 'personalUrl', 'portraitImageUrl', 'retailUrl',
+    'soundcloudUsername', 'twitterPersonalScreenName'
   ];
   var connections = new findSimilar(JSONs, excluded);
   //console.log(connections);
