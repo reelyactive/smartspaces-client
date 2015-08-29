@@ -19,12 +19,12 @@ body {
 }
 
 body.mobile {
-  overflow-x: scroll;
-  overflow-y: hidden;
+  overflow-y: scroll;
+  overflow-x: hidden;
   margin: 0;
 }
 
-body.mobile #title, body.mobile #footer .visit, body.mobile #footer .choose-view {
+body.mobile #title, body.mobile #footer .visit, body.mobile #footer .choose-view, body.mobile #footer #devices-button {
   display: none !important;
 }
 
@@ -36,6 +36,7 @@ body.mobile .person {
   position: relative;
   margin: 0 auto;
   margin-bottom: 90px;
+  display: block;
 }
 
 body.mobile #people {
