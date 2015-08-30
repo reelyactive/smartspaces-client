@@ -16,7 +16,7 @@ var SmartSpace = {
     self.jsonURL = Utils.getJsonURL();
     self.setRefresher();
 
-  	$.getJSON(self.jsonURL, function(data) {
+    $.getJSON(self.jsonURL, function(data) {
   	  Parser.parse(data);
       Layout.init();
     });
@@ -62,8 +62,8 @@ var SmartSpace = {
     var self = this;
     
     self.settings = {
-  	  refreshInterval: 60,
-    	ambientCycleInterval: 10
+      refreshInterval: 60,
+      ambientCycleInterval: 10
   	};
   	
   	$.ajax({
