@@ -6,9 +6,9 @@ var SmartSpace = {
   
   init: function(apiURL) {
     var self = this;
-    
+
     Layout.showLoader();
-    
+
     self.getParams();
     self.getSettings();
     self.getPlaceInfo();
@@ -17,7 +17,7 @@ var SmartSpace = {
     self.setRefresher();
 
     $.getJSON(self.jsonURL, function(data) {
-  	  Parser.parse(data);
+      Parser.parse(data);
       Layout.init();
     });
   },
@@ -45,16 +45,16 @@ var SmartSpace = {
     self.placeInfo = {};
     
     $.ajax({
-        type: 'GET',
-        url: '/'+self.placeName+'/info',
-        dataType: 'json',
-        success: function(data) {
-          $.each(data, function(id, info) {
-            self.placeInfo[id] = info;
-          });
-          self.apiURL = self.placeInfo.apiUrl;
-        },
-        async: false
+      type: 'GET',
+      url: '/'+self.placeName+'/info',
+      dataType: 'json',
+      success: function(data) {
+        $.each(data, function(id, info) {
+          self.placeInfo[id] = info;
+        });
+        self.apiURL = self.placeInfo.apiUrl;
+      },
+      async: false
     });
   },
   
@@ -64,34 +64,34 @@ var SmartSpace = {
     self.settings = {
       refreshInterval: 60,
       ambientCycleInterval: 10
-  	};
-  	
-  	$.ajax({
-        type: 'GET',
-        url: '/settings',
-        dataType: 'json',
-        success: function(data) {
-          $.each(data, function(id, info) {
-            self.settings[id] = info;
-          });
-        },
-        async: false
+    };
+
+    $.ajax({
+      type: 'GET',
+      url: '/settings',
+      dataType: 'json',
+      success: function(data) {
+        $.each(data, function(id, info) {
+          self.settings[id] = info;
+        });
+      },
+      async: false
     });
   },
   
   getServices: function() {
     var self = this;
-    
+
     self.services = {};
-    
+
     $.ajax({
-        type: 'GET',
-        url: '/'+self.placeName+'/services',
-        dataType: 'json',
-        success: function(data) {
-          self.services = data;
-        },
-        async: false
+      type: 'GET',
+      url: '/'+self.placeName+'/services',
+      dataType: 'json',
+      success: function(data) {
+        self.services = data;
+      },
+      async: false
     });
   },
   
@@ -122,7 +122,7 @@ var SmartSpace = {
     
     if (Layout.overlayMode
         || (!Motion.moving && !Layout.blurred && Layout.desktop())) {
-        return false; 
+      return false; 
     }
     
     $.getJSON(self.jsonURL, function(data) {
@@ -205,31 +205,31 @@ var Parser = {
       }
       if (itemType == 'device' || isNewPerson) {
         $.ajax({
-            type: 'GET',
-            url: item['url'],
-            dataType: 'json',
-            success: function(info) {
-              if (info['@graph']) { //JSON-LD
-                $.each(info['@graph'], function() {
-                  var type = this['@type'].split(':')[1].toLowerCase();
-                  SmartSpace.ids.push(type+id);
-                  var info = self.scanForAttributes(this);
-                  SmartSpace.addOccupant(self.refreshing, id, info, item, type);
+          type: 'GET',
+          url: item['url'],
+          dataType: 'json',
+          success: function(info) {
+            if (info['@graph']) { //JSON-LD
+              $.each(info['@graph'], function() {
+                var type = this['@type'].split(':')[1].toLowerCase();
+                SmartSpace.ids.push(type+id);
+                var info = self.scanForAttributes(this);
+                SmartSpace.addOccupant(self.refreshing, id, info, item, type);
+              });
+            } else {
+              if (itemType == 'device') {
+                $.each(SmartSpace.itemTypes, function(key, type) {
+                  if (info.hasOwnProperty(type)) {
+                    SmartSpace.ids.push(type+id);
+                    SmartSpace.addOccupant(self.refreshing, id, info[type], item, type);
+                  }
                 });
               } else {
-                if (itemType == 'device') {
-                  $.each(SmartSpace.itemTypes, function(key, type) {
-                    if (info.hasOwnProperty(type)) {
-                      SmartSpace.ids.push(type+id);
-                      SmartSpace.addOccupant(self.refreshing, id, info[type], item, type);
-                    }
-                  });
-                } else {
-                  SmartSpace.addOccupant(self.refreshing, id, info, item);
-                }
+                SmartSpace.addOccupant(self.refreshing, id, info, item);
               }
-            },
-            async: false
+            }
+          },
+          async: false
         });
       }
     } else { //non-hyperlocal
