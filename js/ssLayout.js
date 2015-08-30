@@ -4,15 +4,15 @@ var Layout = {
   size: '',
   mobileSize: 'medium',
   sizes: ['big', 'medium', 'small', 'smaller', 'tiny', 'tinier', 'puny'],
-	sizeWidths: [300, 200, 150, 130, 110, 90, 75],
-	borders: [30, 20, 15, 13, 11, 9, 8],
-	labelShifts: [-30, -20, -15, -13, -11, -9, -8],
-	leftOverhang: 60,
-	
-	calculatedSizes: {},
+  sizeWidths: [300, 200, 150, 130, 110, 90, 75],
+  borders: [30, 20, 15, 13, 11, 9, 8],
+  labelShifts: [-30, -20, -15, -13, -11, -9, -8],
+  leftOverhang: 60,
+
+  calculatedSizes: {},
   placedObjectTypes: [],
-	
-	overlayMode: false,
+
+  overlayMode: false,
   updating: false,
   blurred: false,
   loading: false,
@@ -293,7 +293,7 @@ var Layout = {
   
   getWindowDimensions: function() {
     winWidth = $(window).width();
-  	winHeight = $(window).height();
+    winHeight = $(window).height();
   }
   
 };
@@ -394,5 +394,5 @@ $(window).focus(function(){
 $(window).resize(function() {
   Layout.getWindowDimensions();
   paper.setSize(winWidth, winHeight);
-	if (Layout.desktop()) Social.sizeLayout();
+  if (Layout.desktop()) Social.sizeLayout();
 });

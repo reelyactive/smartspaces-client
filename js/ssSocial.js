@@ -13,10 +13,10 @@ var SocialScene = {
     self.placeBoxes();
     
     $.post('/track', {
-  	  apiRoot: SmartSpace.apiURL,
-  	  place: SmartSpace.placeName,
-  	  attributes: Tweets.jsonAttribute
-  	});
+      apiRoot: SmartSpace.apiURL,
+      place: SmartSpace.placeName,
+      attributes: Tweets.jsonAttribute
+    });
     
     $.getJSON('/'+SmartSpace.placeName+'/recent', function(data) {
       $.each(data, function(index, object) {
@@ -194,25 +194,25 @@ var Tweets = {
     var self = this;
     $.each(self.users, function(index, username) {
       $.ajax({
-          type: 'GET',
-          url: '/twitter/'+username,
-          dataType: 'json',
-          success: function(data) {
-            var twitterJSON = self.processCached(data, username);
-            var i = 0;
-            $.each(twitterJSON, function(index, tweet) {
-              if ($.inArray(tweet.id, self.ids) == -1) {
-                var weight = self.calculateWeight(tweet);
-                self.tweets.push({'key': tweet.id, 'weight': weight, 'data': tweet});
-                self.ids.push(tweet.id);
-                self.pullHashtags(tweet);
-                i++;
-              }
-            });
-            //if (i > 0) console.log('Added ' + i + ' tweets from ' + username + '.');
-          },
-          data: {},
-          async: false
+        type: 'GET',
+        url: '/twitter/'+username,
+        dataType: 'json',
+        success: function(data) {
+          var twitterJSON = self.processCached(data, username);
+          var i = 0;
+          $.each(twitterJSON, function(index, tweet) {
+            if ($.inArray(tweet.id, self.ids) == -1) {
+              var weight = self.calculateWeight(tweet);
+              self.tweets.push({'key': tweet.id, 'weight': weight, 'data': tweet});
+              self.ids.push(tweet.id);
+              self.pullHashtags(tweet);
+              i++;
+            }
+          });
+          //if (i > 0) console.log('Added ' + i + ' tweets from ' + username + '.');
+        },
+        data: {},
+        async: false
       });
     });
     self.sortHashtags();
@@ -407,11 +407,11 @@ var Notices = {
     self.button.hide();
     self.div.show();
     $.post('/'+SmartSpace.placeName+'/notices/new', {
-  	  message: notice
-  	}, function(data) {
-  	  self.insert(data);
-  	  self.addButton.show();
-  	});
+      message: notice
+    }, function(data) {
+      self.insert(data);
+      self.addButton.show();
+    });
   },
   
   insert: function(notices) {

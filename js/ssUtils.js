@@ -19,21 +19,21 @@ var Utils = {
   getParam: function(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
     var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-      results = regex.exec(location.search);
+        results = regex.exec(location.search);
     return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
   },
   
   isLoadable: function(url) {
     var loadable = true;
     $.ajax({
-        type: 'POST',
-        url: '/loadable',
-        data: { url: url },
-        dataType: 'json',
-        success: function(data) {
-          loadable = data.loadable == 'true';
-        },
-        async: false
+      type: 'POST',
+      url: '/loadable',
+      data: { url: url },
+      dataType: 'json',
+      success: function(data) {
+        loadable = data.loadable == 'true';
+      },
+      async: false
     });
     return loadable;
   },
@@ -50,8 +50,8 @@ var Utils = {
   pairwise: function(list) {
     if (list.length < 2) { return []; }
     var first = list[0],
-      rest  = list.slice(1),
-      pairs = rest.map(function (x) { return [first, x]; });
+        rest  = list.slice(1),
+        pairs = rest.map(function (x) { return [first, x]; });
     return pairs.concat(Utils.pairwise(rest));
   },
   
@@ -112,64 +112,64 @@ var Utils = {
   },
 
   findSimilar: function(data, excludedAttributes) {
-  	var result = {};
-  	// Iterate through each object
-  	data.forEach(function(person) {
-  		// Iterate through each attribute category (e.g. name, surname, ...)
-  		for(var attributeCategory in person){
-  			// Skip attributes that we don't care about (e.g. id)
-  			if (excludedAttributes.indexOf(attributeCategory) > -1)
-  				continue;
-  			// Get the value of the attribute category (e.g. George, Jeff, ...)
-  			var attribute = person[attributeCategory];
-  			// Check if the attribute category is already in the array
-  			if (result[attributeCategory] == undefined) {
-  				// Create a new attribute category
-  				result[attributeCategory] = {};
-  				// Create a new attribute in the category (e.g. George, Jeff, )
-  				// This is what the objects share in common
-  				result[attributeCategory][attribute] = [];
-  				// Add the id of the object
-  				result[attributeCategory][attribute].push(person.id);
-  			} else {
-  				// Check if the attribute in the category is already in the array
-  				if (result[attributeCategory][attribute] == undefined) {
-  					// Create a new attribute in the category (e.g. George, Jeff, )
-  					// This is what the objects share in common
-  					result[attributeCategory][attribute] = [];
-  					// Add the id of the object
-  					result[attributeCategory][attribute].push(person.id);
-  				} else {
-  					// We have found two objects which have something in common!
-  					result[attributeCategory][attribute].push(person.id);
-  				}
-  			}
-  		}
-  	});
+    var result = {};
+    // Iterate through each object
+    data.forEach(function(person) {
+      // Iterate through each attribute category (e.g. name, surname, ...)
+      for(var attributeCategory in person){
+        // Skip attributes that we don't care about (e.g. id)
+        if (excludedAttributes.indexOf(attributeCategory) > -1)
+          continue;
+        // Get the value of the attribute category (e.g. George, Jeff, ...)
+        var attribute = person[attributeCategory];
+        // Check if the attribute category is already in the array
+        if (result[attributeCategory] == undefined) {
+          // Create a new attribute category
+          result[attributeCategory] = {};
+          // Create a new attribute in the category (e.g. George, Jeff, )
+          // This is what the objects share in common
+          result[attributeCategory][attribute] = [];
+          // Add the id of the object
+          result[attributeCategory][attribute].push(person.id);
+        } else {
+          // Check if the attribute in the category is already in the array
+          if (result[attributeCategory][attribute] == undefined) {
+            // Create a new attribute in the category (e.g. George, Jeff, )
+            // This is what the objects share in common
+            result[attributeCategory][attribute] = [];
+            // Add the id of the object
+            result[attributeCategory][attribute].push(person.id);
+          } else {
+            // We have found two objects which have something in common!
+            result[attributeCategory][attribute].push(person.id);
+          }
+        }
+      }
+    });
 
-  	// Clean-up the results, so that we end-up 
-  	// only with objects sharing common attributes
-  	result = Utils.cleanup(result);
+    // Clean-up the results, so that we end-up 
+    // only with objects sharing common attributes
+    result = Utils.cleanup(result);
 
-  	return result;
+    return result;
   },
   
   // Remove single entries
   cleanup: function(dirtyObj) {
-  	// Iterate through each attribute category (e.g. name, surname, ...)
-  	for(var attributeCategory in dirtyObj){
-  		// Iterate through each attribute in the category (e.g. Jeff, George, ...)
-  		for(var attribute in dirtyObj[attributeCategory]){
-  			// If the array containing the ID's has a length of one, delete the attribute
-  			if (dirtyObj[attributeCategory][attribute].length == 1) {
-  				delete dirtyObj[attributeCategory][attribute];
-  				// If the category has no objects, delete it
-  				if (Object.keys(dirtyObj[attributeCategory]).length == 0)
-  					delete dirtyObj[attributeCategory];
-  			}
-  		}
-  	}
-  	return dirtyObj;
+    // Iterate through each attribute category (e.g. name, surname, ...)
+    for(var attributeCategory in dirtyObj){
+      // Iterate through each attribute in the category (e.g. Jeff, George, ...)
+      for(var attribute in dirtyObj[attributeCategory]){
+        // If the array containing the ID's has a length of one, delete the attribute
+        if (dirtyObj[attributeCategory][attribute].length == 1) {
+          delete dirtyObj[attributeCategory][attribute];
+          // If the category has no objects, delete it
+          if (Object.keys(dirtyObj[attributeCategory]).length == 0)
+            delete dirtyObj[attributeCategory];
+        }
+      }
+    }
+    return dirtyObj;
   }
   
 };

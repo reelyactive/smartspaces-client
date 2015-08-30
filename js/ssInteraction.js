@@ -9,32 +9,32 @@ var Interaction = {
     self.iconSize = self.newBorder * 0.8;
     
     if (Layout.mobile()) {
-	    self.hoverAnimation = {
-	      borderWidth: self.newBorder+'px',
+      self.hoverAnimation = {
+        borderWidth: self.newBorder+'px',
         top: '-='+self.borderIncrease+'px',
         marginBottom: '-='+(self.borderIncrease*2)+'px'
-	    };
-	  } else {
-	    self.hoverAnimation = {
-	      borderWidth: self.newBorder+'px',
-  	    top: '-='+self.borderIncrease+'px',
-  	    left: '-='+self.borderIncrease+'px'
-	    };
-	  }
+      };
+    } else {
+      self.hoverAnimation = {
+        borderWidth: self.newBorder+'px',
+        top: '-='+self.borderIncrease+'px',
+        left: '-='+self.borderIncrease+'px'
+      };
+    }
   },
   
   setCSSData: function(bubble) {
     var self = this;
-    
-	  bubble.data('origX', bubble.css('left'));
-	  bubble.data('origY', bubble.css('top'));
-	  bubble.data('origBorder', bubble.css('border-top-width'));
-	  bubble.data('origMarginBottom', bubble.css('margin-bottom'));  
+
+    bubble.data('origX', bubble.css('left'));
+    bubble.data('origY', bubble.css('top'));
+    bubble.data('origBorder', bubble.css('border-top-width'));
+    bubble.data('origMarginBottom', bubble.css('margin-bottom'));  
   },
-  
+
   getIconPosition: function (angle) {
     var self = this;
-    
+
     var d = Layout.sizeWidths[sizeIndex];
     var r = d/2;
     var rPad = self.newBorder/2;
@@ -62,62 +62,62 @@ var Interaction = {
   
   setHovers: function() {
     var self = this;
-    
+
     self.setHoverSizes();
-    
+
     $('.person:visible').unbind('mouseenter mouseleave');
-    
-  	$('.person:visible').hover(function() {
-  	  if (Layout.overlayMode) return false;
+
+    $('.person:visible').hover(function() {
+      if (Layout.overlayMode) return false;
 
       var bubble = $(this);
-      
-  	  Motion.stop();
-  	  Connections.highlight(bubble);
-  	  self.setCSSData(bubble);
-  	  bubble.addClass('hover');
-  	  
-  	  $('#title').css('opacity', 0.2);
 
-  	  var label = $('.label', bubble);
-  	  var labelTop = label.css('top');
+      Motion.stop();
+      Connections.highlight(bubble);
+      self.setCSSData(bubble);
+      bubble.addClass('hover');
 
-  	  label.animate({
-  	    top: self.newLabelTop+'px',
-  	    paddingBottom: -Layout.labelShifts[sizeIndex]+'px'
-  	  }, 300);
-  	  label.css({textShadow: '0px 0px 3px rgba(0, 0, 0, 0.5)'});
+      $('#title').css('opacity', 0.2);
 
-  	  bubble.animate(self.hoverAnimation, 300, function() {
-  	    if (bubble.hasClass('hover')) { // place icons
-  	      var angle = 0;
-  	      var delta = 30;
-    	    if (bubble.data('twitter')) {
-    	      angle += delta;
-      	    var twitter = $('.twitter-icon', bubble);
-      	    self.placeIcon(twitter, angle);
-    	    }
-    	    $('.icon:not(.twitter-icon)', bubble).each(function() {
-    	      angle += delta;
-    	      self.placeIcon($(this), angle);
-    	    });
+      var label = $('.label', bubble);
+      var labelTop = label.css('top');
+
+      label.animate({
+        top: self.newLabelTop+'px',
+        paddingBottom: -Layout.labelShifts[sizeIndex]+'px'
+      }, 300);
+      label.css({textShadow: '0px 0px 3px rgba(0, 0, 0, 0.5)'});
+
+      bubble.animate(self.hoverAnimation, 300, function() {
+        if (bubble.hasClass('hover')) { // place icons
+          var angle = 0;
+          var delta = 30;
+          if (bubble.data('twitter')) {
+            angle += delta;
+            var twitter = $('.twitter-icon', bubble);
+            self.placeIcon(twitter, angle);
+          }
+          $('.icon:not(.twitter-icon)', bubble).each(function() {
+            angle += delta;
+            self.placeIcon($(this), angle);
+          });
         }
-  	  });
+      });
   	}, function() { // unhover
-  	  if (Layout.overlayMode) return false;
+      if (Layout.overlayMode) return false;
 
       var bubble = $(this);
-  	  var label = $('.label', bubble);
-      
-  	  Connections.unhighlight();
+      var label = $('.label', bubble);
+
+      Connections.unhighlight();
       bubble.finish();
       bubble.removeClass('hover');
-  	  label.finish();
-  	  $('.icon', bubble).finish();
-  	  $('.icon', bubble).hide();
-  	  $('#title').css('opacity', 0.8);
+      label.finish();
+      $('.icon', bubble).finish();
+      $('.icon', bubble).hide();
+      $('#title').css('opacity', 0.8);
 
-  	  Motion.resume();
+      Motion.resume();
 
       var cssReset;
       if (Layout.mobile()) {
@@ -130,18 +130,18 @@ var Interaction = {
       } else {
         cssReset = {borderWidth: Layout.borders[sizeIndex]};
       }
-  	  bubble.css(cssReset);
-  	  
+      bubble.css(cssReset);
+
       Layout.resetLabel(bubble);
-  	  Connections.redraw();
-  	});
+      Connections.redraw();
+    });
   },
   
   instrumentIcons: function() {
     var self = this;
-    
+
     $('.icon').unbind('click');
-    
+
     if (Layout.desktop()) {
       $('.icon').each(function() {
         var icon = $(this);
@@ -164,7 +164,7 @@ var Interaction = {
       var icon = $(this);
       var bubble = icon.parent();
       var overlayType = icon.data('overlay');
-      
+
       Connections.dim();
 
       if (Layout.overlayMode && icon.hasClass(overlayService+'-icon')) {
@@ -172,7 +172,7 @@ var Interaction = {
         activeOverlay.hide();
 
       } else {
-        
+
         var personLeft = parseInt(bubble.css('left'));
         var personTop = parseInt(bubble.css('top'));
 
@@ -212,12 +212,12 @@ var Interaction = {
 
 var Overlay = function (bubble, icon) {
   var self = this;
-  
+
   self.bubble = bubble;
   self.icon = icon;
   Layout.overlayMode = true;
   overlayService = '';
-  
+
   $('.icon').removeClass('active');
   icon.addClass('active');
   $('#overlay').removeClass('scrollable');
@@ -239,16 +239,16 @@ var Overlay = function (bubble, icon) {
   self.arrowWidth = 50;
   self.setDimensions();
   self.setCSS();
-  
+
   activeOverlay = self;
 };
 
 Overlay.prototype = {
   setDimensions: function() {
     var self = this;
-  
+
     Layout.getWindowDimensions();
-  
+
     if (Layout.mobile()) {
       self.height = winHeight - 20;
       self.top = 10;
@@ -263,14 +263,14 @@ Overlay.prototype = {
 
   setCSS: function() {
     var self = this;
-  
+
     var personLeft = parseInt(self.bubble.css('left'));
     var personTop = parseInt(self.bubble.css('top'));
     var personWidth = self.bubble.width();
-  
+
     self.borderRadius = 0;
     if (self.type == 'fullscreen') self.borderRadius = '10';
-  
+
     if (Layout.mobile()) {
       self.arrowLeft = 60;
       $('#arrow').css({
@@ -303,12 +303,12 @@ Overlay.prototype = {
 
   place: function() {
     var self = this;
-  
+
     $('#arrow').css({left: self.arrowLeft+'px', top: self.arrowTop+'px'});
     if (self.type == 'fullscreen') $('#arrow').hide();
-  
-    $('#overlay').css(
-      {height: '70px',
+
+    $('#overlay').css({
+      height: '70px',
       top: self.arrowTop+'px',
       left: self.left+'px',
       borderRadius: self.borderRadius+'px'
@@ -316,7 +316,7 @@ Overlay.prototype = {
     $('#overlay .header').hide();
     $('#overlay .profile').hide();
     $('#overlay .loading').show();
-  
+
     $('#overlay').fadeIn(500, function() {
       $(document).click(function(event) {
         if($(event.target).hasClass('icon')) { // icon clicked
@@ -332,7 +332,7 @@ Overlay.prototype = {
     });
   
     if (self.type != 'fullscreen') $('#arrow').fadeIn(500);
-  
+
     if (Layout.desktop()) {
       $('.person:not(#'+self.bubble.attr('id')+'):visible').fadeTo(500, 0.3);
       $('#title').fadeTo(500, 0.3); 
@@ -341,12 +341,12 @@ Overlay.prototype = {
 
   populate: function() {
     var self = this;
-  
+
     if (self.icon.hasClass('twitter-icon')) { // load twitter
       overlayService = 'twitter';
       var handle = self.bubble.data('twitter');
       $('#permalink').attr('href', 'http://twitter.com/'+handle);
-    
+
       $.getJSON('http://smartspaces.herokuapp.com/tweets/'+handle, function(data) {
         if (Utils.length(data) > 0) {
           var bio = data[0].user.description;
@@ -368,10 +368,10 @@ Overlay.prototype = {
       overlayService = self.icon.data('attributeName');
       var retrievalMode = self.icon.data('retrievalMode');
       var url = self.icon.data('url');
-    
+
       $('#overlay .header .name').html(self.bubble.data('name'));
       $('#permalink').attr('href', url);
-    
+
       if (retrievalMode == 'proxy') {
         $.post('/remote', { url: url }, function(data) {
           $('#iframe').attr('src', '/remote/'+data.hash);
@@ -386,11 +386,11 @@ Overlay.prototype = {
 
   open: function() {
     var self = this;
-  
+
     self.setDimensions();
     var scrollable = true;
     var showIframe = false;
-  
+
     if (self.type == 'api') {
       var contentHeight =
         $('#overlay .'+overlayService).height() + $('#overlay .header').height() + 15;
@@ -450,11 +450,11 @@ Overlay.prototype = {
 
   hide: function() {
     var self = this;
-  
+
     Connections.unhighlight();
     self.bubble.removeClass('hover');
     $('.icon', self.bubble).removeClass('active');
-  
+
     $('#title').fadeTo(500, 1.0);
     $('#overlay').fadeOut(500, function() {
       $('.tweet').remove();
@@ -465,9 +465,9 @@ Overlay.prototype = {
     });
     $('#arrow').fadeOut(500);
     $('.icon', self.bubble).fadeOut(300);
-  
+
     Layout.resetLabel(self.bubble);
-  
+
     var cssReset;
     if (Layout.mobile()) {
       var centeredPos =
@@ -493,7 +493,7 @@ Overlay.prototype = {
         Motion.resume();
       });
     }
-  
+
     $(document).unbind('click');
     Layout.overlayMode = false;
   }
