@@ -12,6 +12,11 @@ var Occupant = function (id, info, itemType) {
   var name = info.firstName + ' ' + info.lastName;
   var company = info.companyName;
   
+  if (itemType == 'device') {
+    name = info.model;
+    company = info.manufacturer;
+  }
+  
   $('.name', bubble).html(name);
   $('.company', bubble).html(company);
   
@@ -21,11 +26,6 @@ var Occupant = function (id, info, itemType) {
   bubble.addClass('person');
   bubble.attr('id', id);
   bubble.data('name', name);
-  
-  if (itemType == 'device') {
-    name = info.model;
-    company = info.manufacturer;
-  }
   
   if (info.portraitImageUrl != undefined) {
     bubble.css('background-image', 'url('+info.portraitImageUrl+')');
