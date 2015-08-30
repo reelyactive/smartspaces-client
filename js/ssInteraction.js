@@ -68,10 +68,11 @@ var Interaction = {
     $('.person:visible').unbind('mouseenter mouseleave');
 
     $('.person:visible').hover(function() {
-      if (Layout.overlayMode) return false;
-
+      if (Layout.overlayMode || Layout.blurred) return false;
+  
       var bubble = $(this);
 
+      Layout.hovering = true;
       Motion.stop();
       Connections.highlight(bubble);
       self.setCSSData(bubble);
@@ -104,11 +105,12 @@ var Interaction = {
         }
       });
   	}, function() { // unhover
-      if (Layout.overlayMode) return false;
+      if (Layout.overlayMode || Layout.blurred) return false;
 
       var bubble = $(this);
       var label = $('.label', bubble);
 
+      Layout.hovering = false;
       Connections.unhighlight();
       bubble.finish();
       bubble.removeClass('hover');
@@ -347,7 +349,8 @@ Overlay.prototype = {
       var handle = self.bubble.data('twitter');
       $('#permalink').attr('href', 'http://twitter.com/'+handle);
 
-      $.getJSON('http://smartspaces.herokuapp.com/tweets/'+handle, function(data) {
+      $.getJSON('/twitter/'+handle, function(data) {
+        data = Tweets.processCached(data, handle);
         if (Utils.length(data) > 0) {
           var bio = data[0].user.description;
           $('#overlay .header .name').html(self.bubble.data('name'));

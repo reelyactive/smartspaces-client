@@ -26,7 +26,7 @@ var Motion = {
   
   resume: function() {
     var self = this;
-    if (Layout.mobile()) return false;
+    if (Layout.mobile() || Layout.blurred) return false;
     if (!Layout.overlayMode && !Layout.updating) {
       $.each(self.walkers, function(index, thisWalker) {
         thisWalker.resume();

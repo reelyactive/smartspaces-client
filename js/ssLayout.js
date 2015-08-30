@@ -13,6 +13,7 @@ var Layout = {
   placedObjectTypes: [],
 
   overlayMode: false,
+  hovering: false,
   updating: false,
   blurred: false,
   loading: false,
@@ -24,17 +25,20 @@ var Layout = {
     self.getWindowDimensions();
     self.setBackground();
     self.setVisibility();
-    self.setBubbles();
     self.hideLoader();
     self.calculateSize();
     self.placeObjects();
     self.revealObjects();
+    self.setBubbles();
     self.setLabelTops();
     self.setButtons();
     
     Interaction.setHovers();
     Interaction.instrumentIcons();
+    
+    Connections.clear();
     Connections.draw();
+    
     Motion.start();
     if (self.blurred) Motion.stop();
     
@@ -48,6 +52,8 @@ var Layout = {
         setInterval(ViewChanger.cycleAmbient,
                     SmartSpace.settings.ambientCycleInterval*1000);
     }
+    
+    self.updating = false;
   },
   
   mobile: function() {
@@ -234,6 +240,7 @@ var Layout = {
       var x = i % maxColumns;
       var y = Math.floor(i / maxColumns);
       person.css({left: x * objectSize + leftOffset, top: y * objectSize + topOffset});
+      person.addClass('placed');
     }
 
     return true;
@@ -353,10 +360,12 @@ var ViewChanger = {
       $('#svg').show();
       if (Layout.desktop()) {
         Layout.setVisibility();
-        if (Layout.placedObjectTypes.indexOf(Layout.view) < 0) {
+        if (Layout.placedObjectTypes.indexOf(Layout.view) < 0 || $('.person:visible:not(.placed)')) {
           Layout.placeObjects();
         }
         Layout.switchSize();
+        Connections.clear();
+        Connections.draw();
       }
       Interaction.setHovers();
       Interaction.instrumentIcons();
@@ -382,13 +391,13 @@ var ViewChanger = {
 }
 
 $(window).blur(function(){
-  Motion.stop();
   Layout.blurred = true;
+  Motion.stop();
 });
 
 $(window).focus(function(){
-  Motion.resume();
   Layout.blurred = false;
+  Motion.resume();
 });
 
 $(window).resize(function() {

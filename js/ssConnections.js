@@ -47,6 +47,14 @@ var Connections = {
       }
     }
   },
+  
+  clear: function() {
+    var self = this;
+    if (Layout.mobile()) return false;
+    self.collection = null;
+    $('.person').removeData('lines');
+    self.lines = [];
+  },
 
   redraw: function() {
     var self = this;

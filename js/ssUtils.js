@@ -177,22 +177,22 @@ var Utils = {
 String.prototype.parseURL = function() {
   return this.replace(/[A-Za-z]+:\/\/[A-Za-z0-9-_]+\.[A-Za-z0-9-_:%&~\?\/.=]+/g,
     function(url) {
-		  return '<a href="'+url+'" target="_blank">'+url+'</a>';
+      return '<a href="'+url+'" target="_blank">'+url+'</a>';
 	});
 };
 
 String.prototype.parseUsername = function() {
-	return this.replace(/[@]+[A-Za-z0-9-_]+/g, function(u) {
-		var username = u.replace("@","")
-		return '<a href="http://twitter.com/'+username+'" target="_blank">'+u+'</a>';
-	});
+  return this.replace(/[@]+[A-Za-z0-9-_]+/g, function(u) {
+    var username = u.replace("@","")
+    return '<a href="http://twitter.com/'+username+'" target="_blank">'+u+'</a>';
+  });
 };
 
 String.prototype.parseHashtag = function() {
-	return this.replace(/[#]+[A-Za-z0-9-_]+/g, function(t) {
-		var tag = t.replace("#","")
-		return '<a href="http://twitter.com/hashtag/'+tag+'" target="_blank">'+t+'</a>';
-	});
+  return this.replace(/[#]+[A-Za-z0-9-_]+/g, function(t) {
+    var tag = t.replace("#","")
+    return '<a href="http://twitter.com/hashtag/'+tag+'" target="_blank">'+t+'</a>';
+  });
 };
 
 $.fn.preload = function() {

@@ -102,6 +102,7 @@ var SmartSpace = {
   addOccupant: function(refreshing, id, info, item, itemType) {
     var self = this;
     if (!self.isNewOccupant(id, itemType)) return false;
+    Layout.updating = true;
     info['cormorant'] = encodeURIComponent(item['url']);
     var thisOccupant = new Occupant(itemType+id, info, itemType);
     thisOccupant.insert();
@@ -109,10 +110,8 @@ var SmartSpace = {
   
   setRefresher: function() {
     var self = this;
-    if (Layout.view == 'people') {
-      var refresher =
-        setInterval(SmartSpace.refresh, self.settings.refreshInterval*1000);
-    }
+    var refresher =
+      setInterval(SmartSpace.refresh, self.settings.refreshInterval*1000);
   },
   
   refresh: function() {
@@ -120,43 +119,29 @@ var SmartSpace = {
     
     Layout.setBackground();
     
-    if (Layout.overlayMode
-        || (!Motion.moving && !Layout.blurred && Layout.desktop())) {
-      return false; 
-    }
+    if (Layout.overlayMode || Layout.hovering) return false;
+    
+    console.log('Refreshing.');
     
     $.getJSON(self.jsonURL, function(data) {
       Motion.stop();
       Parser.parse(data, true);
-      Layout.setBubbles();
       
-      $.each(Layout.bubbles, function(index, bubble) {
-        if (self.ids.indexOf(person.attr('id')) < 0) { // person no longer here
-          if (bubble.is(':visible')) Layout.updating = true;
+      var bubbleRemoved = false;
+      $.each($('.person'), function() {
+        var bubble = $(this);
+        if (self.ids.indexOf(bubble.attr('id')) < 0) { // person no longer here
           bubble.remove();
-        } else {
-          $('.label', bubble).removeAttr('style');
-          if (bubble.hasClass('hover')) {
-            bubble.trigger('mouseout');
-          }
+          bubbleRemoved = true;
         }
       });
       
-      if (Layout.updating) {
-        var oldSize = size;
-        Layout.calculateSize();
-        if (size != oldSize) {
-          $.each(Layout.bubbles, function(index, bubble) {
-            bubble.removeClass(oldSize);
-            bubble.addClass(size);
-            bubble.css({borderWidth: ''});
-          });
-        }
-        Layout.init();
-        Layout.updating = false;
-      } else {
-        if (!Layout.blurred) Motion.resume();
+      if (bubbleRemoved) {
+        Connections.clear();
+        Connections.draw();
       }
+      
+      Motion.resume();
     });
   }
   
@@ -170,7 +155,9 @@ var Parser = {
     lastName: ['schema:familyName'],
     portraitImageUrl: ['schema:image'],
     companyName: ['schema:worksFor'],
-    companyTitle: ['schema:jobTitle']
+    companyTitle: ['schema:jobTitle'],
+    model: ['schema:model'],
+    manufacturer: [{'schema:manufacturer': 'schema:name'}]
   },
   
   refreshing: false,
@@ -184,6 +171,9 @@ var Parser = {
       self.parseItems(data.devices, 'device');
     } else {
       self.parseItems(data);
+    }
+    if (self.refreshing && Layout.updating) {
+      Layout.init();
     }
   },
   
@@ -212,6 +202,7 @@ var Parser = {
             if (info['@graph']) { //JSON-LD
               $.each(info['@graph'], function() {
                 var type = this['@type'].split(':')[1].toLowerCase();
+                if (type == 'product') type = 'device';
                 SmartSpace.ids.push(type+id);
                 var info = self.scanForAttributes(this);
                 SmartSpace.addOccupant(self.refreshing, id, info, item, type);
@@ -242,7 +233,15 @@ var Parser = {
     var self = this;
     $.each(self.attributeNames, function(name, aliases) {
       $.each(aliases, function() {
-        if (info[this]) info[name] = info[this];
+        var alias = this;
+        if ($.isPlainObject(alias)) {
+          $.each(alias, function(key, val) {
+            if (info[key] && info[key][val])
+              info[name] = info[key][val];
+          });
+        } else {
+          if (info[alias]) info[name] = info[alias];
+        }
       });
     });
     return info;
