@@ -46,8 +46,8 @@ function PathWalker(walkerObj) {
   self.speed = 10;
   self.easing = '';
   self.startOffset = Math.floor(Math.random()*100);;
-  self.startX = parseInt($(self.walker).css('left'));
-  self.startY = parseInt($(self.walker).css('top'));
+  self.startX = parseInt($(self.walker).data('startX'));
+  self.startY = parseInt($(self.walker).data('startY'));
   self.bg = $(self.walker).css('background-image');
 }
 

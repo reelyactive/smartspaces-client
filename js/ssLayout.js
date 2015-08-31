@@ -5,6 +5,7 @@ var Layout = {
   mobileSize: 'medium',
   sizes: ['big', 'medium', 'small', 'smaller', 'tiny', 'tinier', 'puny'],
   sizeWidths: [300, 200, 150, 130, 110, 90, 75],
+  placementBuffer: 1.9,
   borders: [30, 20, 15, 13, 11, 9, 8],
   labelShifts: [-30, -20, -15, -13, -11, -9, -8],
   leftOverhang: 60,
@@ -65,8 +66,13 @@ var Layout = {
   
   newObjects: function() {
     var self = this;
+    if (self.tooManyObjects()) {
+      console.log('Screen too small / too many objects.');
+      self.updating = false;
+      return;
+    }
     var newObjectsPlaced = self.placeNewObjects();
-    if (self.unplacedObjectsRemain()) {
+    if (self.unplacedObjects()) {
       self.init();
     } else {
       if (newObjectsPlaced) {
@@ -75,6 +81,11 @@ var Layout = {
         self.updating = false;
       }
     }
+  },
+  
+  tooManyObjects: function() {
+    var self = this;
+    return $('.person.placed:visible').length >= self.calcMinMax().maxObjects;
   },
   
   mobile: function() {
@@ -198,43 +209,51 @@ var Layout = {
     });
   },
   
-  unplacedObjectsRemain: function() {
-    var self = this;
-    return self.unplacedObjects().length > 0;
-  },
-  
   unplacedObjects: function() {
-    return $('.person:visible:not(.placed)');
+    var self = this;
+    return $('.person:visible:not(.placed)').length > 0;
   },
   
   placeNewObjects: function() {
     var self = this;
     
-    if ($('.'+self.view, self.unplacedObjects()).length == 0) {
+    if (self.view == 'people'
+        && $('.person:visible:not(.placed):not(.device)').length == 0) {
       console.log('New, but not this view.');
       self.placedObjectTypes = [];
       self.placedObjectTypes.push(self.view);
       return false;
     }
     
-    //console.log('Placing new');
+    console.log('Placing new');
     var avoidedObjects = $('.person:visible, .avoid');
-    var maxTries = 30;
+    var maxTries = 300;
+    var failures = 0;
     
-    self.unplacedObjects().each(function() {
+    $('.person:visible:not(.placed)').each(function() {
+      if (failures > 0 || self.tooManyObjects()) return;
+      
       var bubble = $(this);
       var i = 0;
       
       do {
-        var randX = Utils.randomNumber(0, winWidth-bubble.outerWidth());
-        var randY = Utils.randomNumber($('#header').height(), winHeight-bubble.outerHeight());
+        var randX =
+          Utils.randomNumber(0, winWidth-bubble.outerWidth());
+        var randY =
+          Utils.randomNumber($('#header').height(), winHeight-bubble.outerHeight());
         bubble.css({left: randX, top: randY});
         i++;
         //console.log(i + ' placement tries.');
       } while (Utils.collisions(bubble, avoidedObjects) && i < maxTries);
       
+      console.log(i + ' placement tries.');
       if (i < maxTries) { // space found
         bubble.addClass('placed');
+        bubble.data('startX', bubble.css('left'));
+        bubble.data('startY', bubble.css('top'));
+      } else {
+        failures++;
+        bubble.remove();
       }
     });
     
@@ -253,23 +272,17 @@ var Layout = {
     }
     console.log("Could not place properly");
     self.placeObjectsAtSize(self.sizes.length-1, true);
+    self.calculatedSizes[self.view] = self.size;
   },
   
-  placeObjectsAtSize: function(sizeId, force) {
+  calcMinMax: function() {
     var self = this;
-    
-    self.size = self.sizes[sizeId];
-    self.changeAllSizes();
-    window.sizeIndex = sizeId;
-
-    var buffer = 1.2;
-    var objectSize = self.sizeWidths[sizeId] * 1.5;
+    var objectSize =
+      self.sizeWidths[self.sizes.indexOf(self.size)] * self.placementBuffer;
     var min_x = 0;
     var max_x = winWidth - objectSize;
     var min_y = $('#header').height();
     var max_y = winHeight - objectSize - $('#footer:visible').height();
-    var padding_buffer = objectSize / 6;
-    var max_tries = 100;
 
     var middleX = (min_x + max_x) / 2;
     var middleY = (min_y + max_y) / 2;
@@ -280,31 +293,53 @@ var Layout = {
     var middleX = Math.round(maxColumns/2);
 
     var maxObjects =  maxColumns * maxRows;
+    
+    return {
+      'min_y': min_y, 'maxRows': maxRows, 'maxColumns': maxColumns,
+      'maxObjects': maxObjects, 'objectSize': objectSize
+    }
+  },
+  
+  placeObjectsAtSize: function(sizeId, force) {
+    var self = this;
+    
+    self.size = self.sizes[sizeId];
+    console.log('Placing at size: ' + self.size);
+    self.changeAllSizes();
+    window.sizeIndex = sizeId;
+
+    var calc =  self.calcMinMax();
 
     var persons = $('.person:visible');
-    if (!force && persons.length > maxObjects) return false;
+    if (!force && persons.length > calc.maxObjects) return false;
 
-    if (force && maxObjects < persons.length) {
-      var overflowPersons = persons.slice(maxObjects, persons.length);
+    if (force && calc.maxObjects < persons.length) {
+      var overflowPersons = persons.slice(calc.maxObjects, persons.length);
       overflowPersons.each(function() {
         $(this).hide();
       });
     }
 
-    persons = persons.slice(0, maxObjects);
+    persons = persons.slice(0, calc.maxObjects);
 
-    var orderingArray = persons.toArray().concat(new Array(maxObjects - persons.length));
+    var orderingArray =
+      persons.toArray().concat(new Array(calc.maxObjects - persons.length));
     Utils.shuffle(orderingArray);
 
     var leftOffset = 0;
-    var topOffset = min_y + 20;
+    var topOffset = calc.min_y + 20;
 
     for(var i = 0; i < orderingArray.length; i++) {
       var person = $(orderingArray[i]);
-      var x = i % maxColumns;
-      var y = Math.floor(i / maxColumns);
-      person.css({left: x * objectSize + leftOffset, top: y * objectSize + topOffset});
+      var x = i % calc.maxColumns;
+      var y = Math.floor(i / calc.maxColumns);
+      person.css({
+        left: x * calc.objectSize + leftOffset,
+        top: y * calc.objectSize + topOffset
+      });
       person.addClass('placed');
+      person.data('startX', person.css('left'));
+      person.data('startY', person.css('top'));
     }
 
     return true;
@@ -425,6 +460,7 @@ var ViewChanger = {
       if (Layout.desktop()) {
         Layout.setVisibility();
         if (Layout.placedObjectTypes.indexOf(Layout.view) < 0 || $('.person:visible:not(.placed)')) {
+          console.log('Placing ' + Layout.view + ' view.');
           Layout.placeObjects();
         }
         Layout.switchSize();
