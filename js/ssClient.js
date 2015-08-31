@@ -222,7 +222,7 @@ var Parser = {
       }
     } else { //non-hyperlocal
       SmartSpace.ids.push(id);
-      SmartSpace.addOccupant(id, item, item);
+      SmartSpace.addOccupant(self.refreshing, id, item, item);
     }
   },
   
