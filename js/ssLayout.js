@@ -22,6 +22,8 @@ var Layout = {
   init: function() {
     var self = this;
     
+    console.log('Initializing layout.');
+    
     self.getWindowDimensions();
     self.setBackground();
     self.setVisibility();
@@ -47,6 +49,8 @@ var Layout = {
   activate: function() {
     var self = this;
     
+    console.log('Activating layout.');
+    
     Interaction.setHovers();
     Interaction.instrumentIcons();
     
@@ -61,11 +65,15 @@ var Layout = {
   
   newObjects: function() {
     var self = this;
-    self.placeNewObjects();
+    var newObjectsPlaced = self.placeNewObjects();
     if (self.unplacedObjectsRemain()) {
       self.init();
     } else {
-      self.activate();
+      if (newObjectsPlaced) {
+        self.activate();
+      } else {
+        self.updating = false;
+      }
     }
   },
   
@@ -202,6 +210,13 @@ var Layout = {
   placeNewObjects: function() {
     var self = this;
     
+    if ($('.'+self.view, self.unplacedObjects()).length == 0) {
+      console.log('New, but not this view.');
+      self.placedObjectTypes = [];
+      self.placedObjectTypes.push(self.view);
+      return false;
+    }
+    
     //console.log('Placing new');
     var avoidedObjects = $('.person:visible, .avoid');
     var maxTries = 30;
@@ -212,7 +227,7 @@ var Layout = {
       
       do {
         var randX = Utils.randomNumber(0, winWidth-bubble.outerWidth());
-        var randY = Utils.randomNumber(0, winHeight-bubble.outerHeight()-50);
+        var randY = Utils.randomNumber($('#header').height(), winHeight-bubble.outerHeight());
         bubble.css({left: randX, top: randY});
         i++;
         //console.log(i + ' placement tries.');
@@ -222,6 +237,8 @@ var Layout = {
         bubble.addClass('placed');
       }
     });
+    
+    return true;
   },
   
   placeObjects: function() {

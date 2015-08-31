@@ -82,17 +82,19 @@ var Utils = {
   },
   
   collision: function(a,b){
+    var buffer = 20;
+    var label = 20;
     var aPos = a.offset();
     var bPos = b.offset();
-    var al = aPos.left;
-    var ar = aPos.left+a.outerWidth();
-    var bl = bPos.left;
-    var br = bPos.left+b.outerWidth();
+    var al = aPos.left - buffer;
+    var ar = aPos.left+a.outerWidth() + buffer;
+    var bl = bPos.left - buffer;
+    var br = bPos.left+b.outerWidth() + buffer;
 
-    var at = aPos.top;
-    var ab = aPos.top+a.outerHeight();
-    var bt = bPos.top;
-    var bb = bPos.top+b.outerHeight();
+    var at = aPos.top - buffer;
+    var ab = aPos.top+a.outerHeight() + buffer + label;
+    var bt = bPos.top - buffer;
+    var bb = bPos.top+b.outerHeight() + buffer + label;
 
     if(bl>ar || br<al){return false;}//overlap not possible
     if(bt>ab || bb<at){return false;}//overlap not possible
