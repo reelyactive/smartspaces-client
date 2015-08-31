@@ -62,7 +62,9 @@ var Interaction = {
   
   setHovers: function() {
     var self = this;
-
+    
+    Layout.setBubbles();
+    Layout.setLabelTops();
     self.setHoverSizes();
 
     $('.person:visible').unbind('mouseenter mouseleave');

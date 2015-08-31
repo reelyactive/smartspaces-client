@@ -25,22 +25,12 @@ var Layout = {
     self.getWindowDimensions();
     self.setBackground();
     self.setVisibility();
+    self.setButtons();
     self.hideLoader();
     self.calculateSize();
     self.placeObjects();
     self.revealObjects();
-    self.setBubbles();
-    self.setLabelTops();
-    self.setButtons();
-    
-    Interaction.setHovers();
-    Interaction.instrumentIcons();
-    
-    Connections.clear();
-    Connections.draw();
-    
-    Motion.start();
-    if (self.blurred) Motion.stop();
+    self.activate();
     
     if (self.view == 'place') {
       $('.people').hide();
@@ -52,8 +42,31 @@ var Layout = {
         setInterval(ViewChanger.cycleAmbient,
                     SmartSpace.settings.ambientCycleInterval*1000);
     }
+  },
+  
+  activate: function() {
+    var self = this;
+    
+    Interaction.setHovers();
+    Interaction.instrumentIcons();
+    
+    Connections.clear();
+    Connections.draw();
+    
+    Motion.start();
+    if (self.blurred) Motion.stop();
     
     self.updating = false;
+  },
+  
+  newObjects: function() {
+    var self = this;
+    self.placeNewObjects();
+    if (self.unplacedObjectsRemain()) {
+      self.init();
+    } else {
+      self.activate();
+    }
   },
   
   mobile: function() {
@@ -174,6 +187,40 @@ var Layout = {
     $('.person:visible').each(function() {
       $(this).removeClass(self.sizes.join(' '));
       $(this).addClass(self.size);
+    });
+  },
+  
+  unplacedObjectsRemain: function() {
+    var self = this;
+    return self.unplacedObjects().length > 0;
+  },
+  
+  unplacedObjects: function() {
+    return $('.person:visible:not(.placed)');
+  },
+  
+  placeNewObjects: function() {
+    var self = this;
+    
+    //console.log('Placing new');
+    var avoidedObjects = $('.person:visible, .avoid');
+    var maxTries = 30;
+    
+    self.unplacedObjects().each(function() {
+      var bubble = $(this);
+      var i = 0;
+      
+      do {
+        var randX = Utils.randomNumber(0, winWidth-bubble.outerWidth());
+        var randY = Utils.randomNumber(0, winHeight-bubble.outerHeight()-50);
+        bubble.css({left: randX, top: randY});
+        i++;
+        //console.log(i + ' placement tries.');
+      } while (Utils.collisions(bubble, avoidedObjects) && i < maxTries);
+      
+      if (i < maxTries) { // space found
+        bubble.addClass('placed');
+      }
     });
   },
   

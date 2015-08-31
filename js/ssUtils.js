@@ -38,6 +38,10 @@ var Utils = {
     return loadable;
   },
   
+  randomNumber: function(min, max) {
+    return Math.floor(Math.random()*max) + min;
+  },
+  
   randomElement: function(items) {
     return items[Math.floor(Math.random()*items.length)];
   },
@@ -67,6 +71,39 @@ var Utils = {
   
   toRad: function(angle) {
     return angle * (Math.PI / 180);
+  },
+  
+  collisions: function(object, avoidedObjects) {
+    var overlap = false;
+    $.each(avoidedObjects, function() {
+      if (Utils.collision(object, $(this))) overlap = true;
+    });
+    return overlap;
+  },
+  
+  collision: function(a,b){
+    var aPos = a.offset();
+    var bPos = b.offset();
+    var al = aPos.left;
+    var ar = aPos.left+a.outerWidth();
+    var bl = bPos.left;
+    var br = bPos.left+b.outerWidth();
+
+    var at = aPos.top;
+    var ab = aPos.top+a.outerHeight();
+    var bt = bPos.top;
+    var bb = bPos.top+b.outerHeight();
+
+    if(bl>ar || br<al){return false;}//overlap not possible
+    if(bt>ab || bb<at){return false;}//overlap not possible
+
+    if(bl>al && bl<ar){return true;}
+    if(br>al && br<ar){return true;}
+
+    if(bt>at && bt<ab){return true;}
+    if(bb>at && bb<ab){return true;}
+
+    return false;
   },
   
   parseDate: function(tdate) {

@@ -173,7 +173,7 @@ var Parser = {
       self.parseItems(data);
     }
     if (self.refreshing && Layout.updating) {
-      Layout.init();
+      Layout.newObjects();
     }
   },
   
