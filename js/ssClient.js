@@ -160,6 +160,8 @@ var Parser = {
     manufacturer: [{'schema:manufacturer': 'schema:name'}]
   },
   
+  cachedURLs: {},
+  deadURLs: [],
   refreshing: false,
   
   parse: function(data, refreshing) {
@@ -188,44 +190,69 @@ var Parser = {
   parseItem: function(id, item, itemType) {
     var self = this;
     if (item.hasOwnProperty('url')) {
+      var url = item['url'];
+      if (self.deadURLs.indexOf(url) > -1) {
+        console.log('Not checking dead URL: ' + url);
+        return false;
+      }
       if (itemType == 'person') {
         id = item['value'];
         SmartSpace.ids.push(id);
         var isNewPerson = SmartSpace.isNewOccupant(id);
       }
       if (itemType == 'device' || isNewPerson) {
-        $.ajax({
-          type: 'GET',
-          url: item['url'],
-          dataType: 'json',
-          success: function(info) {
-            if (info['@graph']) { //JSON-LD
-              $.each(info['@graph'], function() {
-                var type = this['@type'].split(':')[1].toLowerCase();
-                if (type == 'product') type = 'device';
-                SmartSpace.ids.push(type+id);
-                var info = self.scanForAttributes(this);
-                SmartSpace.addOccupant(self.refreshing, id, info, item, type);
-              });
-            } else {
-              if (itemType == 'device') {
-                $.each(SmartSpace.itemTypes, function(key, type) {
-                  if (info.hasOwnProperty(type)) {
-                    SmartSpace.ids.push(type+id);
-                    SmartSpace.addOccupant(self.refreshing, id, info[type], item, type);
-                  }
-                });
-              } else {
-                SmartSpace.addOccupant(self.refreshing, id, info, item);
-              }
-            }
-          },
-          async: false
-        });
+        if (self.cachedURLs.hasOwnProperty(url)) {
+          var info = self.cachedURLs[url];
+          self.parseInfo(id, item, itemType, info);
+        } else {
+          $.ajax({
+            type: 'GET',
+            url: url,
+            dataType: 'json',
+            success: function(info) {
+              self.cachedURLs[url] = info;
+              self.parseInfo(id, item, itemType, info);
+            },
+            error: function(req, msg) {
+              self.deadURLs.push(url);
+            },
+            async: false
+          });
+        }
       }
     } else { //non-hyperlocal
       SmartSpace.ids.push(id);
       SmartSpace.addOccupant(id, item, item);
+    }
+  },
+  
+  parseInfo: function(id, item, itemType, info) {
+    var self = this;
+    if (info['@graph']) { //JSON-LD
+      $.each(info['@graph'], function() {
+        var type = this['@type'].split(':')[1].toLowerCase();
+        if (type == 'product') type = 'device';
+        SmartSpace.ids.push(type+id);
+        var info = self.scanForAttributes(this);
+        SmartSpace.addOccupant(
+          self.refreshing, id, info, item, type
+        );
+      });
+    } else {
+      if (itemType == 'device') {
+        $.each(SmartSpace.itemTypes, function(key, type) {
+          if (info.hasOwnProperty(type)) {
+            SmartSpace.ids.push(type+id);
+            SmartSpace.addOccupant(
+              self.refreshing, id, info[type], item, type
+            );
+          }
+        });
+      } else {
+        SmartSpace.addOccupant(
+          self.refreshing, id, info, item
+        );
+      }
     }
   },
   

@@ -277,6 +277,7 @@ var Layout = {
   
   calcMinMax: function() {
     var self = this;
+    
     var objectSize =
       self.sizeWidths[self.sizes.indexOf(self.size)] * self.placementBuffer;
     var min_x = 0;
