@@ -5,7 +5,7 @@ var Layout = {
   mobileSize: 'medium',
   sizes: ['big', 'medium', 'small', 'smaller', 'tiny', 'tinier', 'puny'],
   sizeWidths: [300, 200, 150, 130, 110, 90, 75],
-  placementBuffer: 1.9,
+  placementBuffer: 1.7,
   borders: [30, 20, 15, 13, 11, 9, 8],
   labelShifts: [-30, -20, -15, -13, -11, -9, -8],
   leftOverhang: 60,
