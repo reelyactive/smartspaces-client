@@ -59,11 +59,11 @@ var Detection = {
     $('.sensors-text').fadeTo(1000, 1).delay(2000).fadeTo(2000, 0.7);
     $('.looking-text').delay(3000).fadeTo(1000, 1).delay(2000).fadeTo(2000, 0.7);
     $('.devices-text').delay(4500).fadeTo(1000, 1);
-    $('.people-text').delay(9000).fadeTo(1000, 1);
+    $('.people-text').delay(8000).fadeTo(1000, 1);
     
     setTimeout(function() {
       $('.show-context').css('display','inline-block').show().fadeTo(1000, 0.8);
-    }, 10500);
+    }, 9500);
     $('.show-context').click(function() {
       Layout.init();
     });
