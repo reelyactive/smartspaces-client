@@ -17,8 +17,9 @@ var SmartSpace = {
     self.setRefresher();
 
     $.getJSON(self.jsonURL, function(data) {
+      Detection.init(data);
       Parser.parse(data);
-      Layout.init();
+      //Layout.init();
     });
   },
   
@@ -104,6 +105,7 @@ var SmartSpace = {
     if (!self.isNewOccupant(id, itemType)) return false;
     Layout.updating = true;
     info['cormorant'] = encodeURIComponent(item['url']);
+    Detection.addInfo(id, info, itemType);
     var thisOccupant = new Occupant(itemType+id, info, itemType);
     thisOccupant.insert();
   },

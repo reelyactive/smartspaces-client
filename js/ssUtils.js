@@ -1,5 +1,13 @@
 var Utils = {
   
+  distance: function(div1, div2) {
+    var p1 = div1.offset();
+    var p2 = div2.offset();
+    var a = p1.left - p2.left;
+    var b = p1.top - p2.top;
+    return Math.sqrt( a*a + b*b );
+  },
+  
   getAreaIdentifier: function() {
     // Identifiers are obtained by slice to remove leading '#' or '/'.
     var identifier = window.location.hash.slice(1);

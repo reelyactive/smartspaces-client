@@ -25,6 +25,7 @@ var Layout = {
     
     console.log('Initializing layout.');
     
+    Detection.hide();
     self.getWindowDimensions();
     self.setBackground();
     self.setVisibility();

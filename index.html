@@ -18,7 +18,6 @@
       <a class="twitter-icon icon" data-overlay="api"></a>
     </div>
     <div id="header">
-      <span class="welcome">Welcome!&nbsp;</span>
       <span class="space-name">This place</span> is a 
       <a href="http://context.reelyactive.com" target="_blank">
         <span class="reely">reely</span><span class="active">Active</span>
@@ -113,8 +112,56 @@
       <iframe src="" id="iframe"></iframe>
     </div>
     <div id="arrow"></div>
+		<div class="receiver-node dummy"></div>
+		<div class="device-node dummy">
+			<div class="device-node-dot"></div>
+			<div class="device-node-label"></div>
+		</div>
+		<div id="detection-text">
+			<div class="sensors-text">There are <span class="num-sensors"></span> reelyActive sensors in this Smart Space.</div>
+			<div class="looking-text">The sensors are looking for devices...</div>
+			<div class="devices-text"><span class="num-detected">0</span> <span class="detected-clause">devices have</span> been detected.</div>
+			<div class="people-text"><span class="num-people"></span> known people are present.</div>
+			<div class="show-context">Show me more <span class="context">context</span></div>
+		</div>
+		<svg id="pulse-svg">
+			<g transform="translate(-500,-500)" id="pulse-container">
+		    <g id="pulse" visibility="hidden">
+	        <radialGradient id="SVGID_4_" cx="100" cy="100" r="21.2498" gradientUnits="userSpaceOnUse">
+	           <stop  offset="0" style="stop-color:#FFFFFF;stop-opacity:0"/>
+	           <stop  offset="1" style="stop-color:#FFFFFF;stop-opacity:1" />
+	        </radialGradient>
+	        <path opacity="0.5" fill="url(#SVGID_4_)" stroke="url(#SVGID_4_)" stroke-width="0" stroke-miterlimit="10" d="M120.864,99.676
+	           c0,11.599-9.401,21-21,21c-11.598,0-21-9.401-21-21c0-11.598,9.402-21,21-21c6.705,0,12.679,3.144,16.523,8.037
+	           C119.193,90.281,120.864,94.783,120.864,99.676z" transform="translate( -100 -100)"/>
+	        <animateTransform 
+	           attributeType="xml"
+	           attributeName="transform"
+	           type="scale"
+	           from="0"
+	           by="10"
+	           dur="5s" 
+	           fill="freeze"           
+	           repeatCount="indefinite"
+	           />  
+	        <animate 
+						 id="fader"
+	           attributeType="xml" 
+	           attributeName="fill-opacity" 
+	               from="0" 
+	               to="0" 
+	               values="0;0.5;0"
+	           dur="5s" 
+	           repeatCount="indefinite" 
+	           fill="freeze" />
+	         <set attributeName="visibility" from="hidden" to="visible" begin="fader.begin"/>
+		    </g>
+			</g>
+		</svg>
+
     <!--<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>-->
     <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.js"></script>
     <script src='../js/jquery.hoverIntent.min.js'></script>
     <script src='../js/jquery.collision.min.js'></script>
     <script src='../js/jquery.visible.min.js'></script>
@@ -126,6 +173,7 @@
     <script src='../js/ssMotion.js'></script>
     <script src='../js/ssSocial.js'></script>
     <script src='../js/ssLayout.js'></script>
+		<script src='../js/ssDetection.js'></script>
     <script src='../js/ssInteraction.js'></script>
     <script src='../js/ssConnections.js'></script>
     <script src='../js/ssClient.js'></script>
