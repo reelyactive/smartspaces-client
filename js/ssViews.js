@@ -110,7 +110,7 @@ var Areas = {
   addArea: function(id, info) {
     var self = this;
     var name = info['schema:name'];
-    var area = {id, name};
+    var area = {id: id, name: name};
     self.areas.push(area);
   },
   
