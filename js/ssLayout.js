@@ -120,15 +120,13 @@ var Layout = {
   },
   
   setBackground: function() {
-    if (SmartSpace.settings.forcedBackground == '') {
+    if (SmartSpace.placeInfo.hasOwnProperty('forcedBackground')
+        && SmartSpace.placeInfo.forcedBackground != '') {
+      $('body').css('background', SmartSpace.placeInfo.forcedBackground);
+    } else {
       var d = new Date(), e = new Date(d);
       var dayFraction = (e - d.setHours(0,0,0,0)) / 10 / 86400;
       $('body').css('background-position', '0% '+dayFraction+'%');
-    } else {
-      $('body').css(
-        'background',
-        SmartSpace.settings.forcedBackground
-      );
     }
   },
   

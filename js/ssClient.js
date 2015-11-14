@@ -7,12 +7,11 @@ var SmartSpace = {
   init: function(apiURL) {
     var self = this;
 
-    self.getParams();
-    self.getSettings();
-    
+    self.getPlaceInfo();
     Layout.showLoader();
     
-    self.getPlaceInfo();
+    self.getParams();
+    self.getSettings();
     self.getServices();
     self.jsonURL = Utils.getJsonURL();
     self.setRefresher();
@@ -66,8 +65,7 @@ var SmartSpace = {
     self.settings = {
       refreshInterval: 60,
       ambientCycleInterval: 10,
-      showDetection: true,
-      forcedBackground: ''
+      showDetection: true
     };
 
     $.ajax({
