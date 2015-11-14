@@ -25,7 +25,16 @@
       <a href="http://smartspac.es" target="_blank">
         <span class="smart-space">smart space.</span>
       </a>
+			<div id="filter-button">Filter by area</div>
     </div>
+		<div id="filter-menu">
+			<div class="menu-bg"></div>
+			<div class="areas">
+				<div class="area dummy">
+					<div class="area-button"></div><div class="area-name"></div>
+				</div>
+			</div>
+		</div>
     <!--<div id="title" class="people avoid"><span id="who-what">Who</span>&#39;s here<span class="faded">?</span></div>-->
     <div id="loading">Loading...</div>
     <div id="svg"></div>
@@ -118,12 +127,13 @@
 			<div class="device-node-label"></div>
 		</div>
 		<div id="detection-text">
-			<div class="sensors-text">There are <span class="num-sensors"></span> reelyActive sensors in this Smart Space.</div>
+			<div class="sensors-text">There <span class="sensors-are">are</span> <span class="num-sensors"></span> reelyActive <span class="sensors-plural">sensors</span> in this Smart Space.</div>
 			<div class="looking-text">The sensors are looking for devices...</div>
 			<div class="devices-text"><span class="num-detected">0</span> <span class="detected-clause">devices have</span> been detected.</div>
 			<div class="people-text"><span class="num-people"></span> known people are present.</div>
 			<div class="show-context">Show me more <span class="context">context</span></div>
 		</div>
+		
 		<svg id="pulse-svg">
 			<g transform="translate(-500,-500)" id="pulse-container">
 		    <g id="pulse" visibility="hidden">
@@ -173,6 +183,7 @@
     <script src='../js/ssMotion.js'></script>
     <script src='../js/ssSocial.js'></script>
     <script src='../js/ssLayout.js'></script>
+    <script src='../js/ssViews.js'></script>
 		<script src='../js/ssDetection.js'></script>
     <script src='../js/ssInteraction.js'></script>
     <script src='../js/ssConnections.js'></script>

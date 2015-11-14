@@ -1,10 +1,8 @@
 var Utils = {
   
-  distance: function(div1, div2) {
-    var p1 = div1.offset();
-    var p2 = div2.offset();
-    var a = p1.left - p2.left;
-    var b = p1.top - p2.top;
+  distance: function(x1, y1, x2, y2) {
+    var a = x1 - x2;
+    var b = y1 - y2;
     return Math.sqrt( a*a + b*b );
   },
   

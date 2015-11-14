@@ -70,7 +70,8 @@ var Interaction = {
     $('.person:visible').unbind('mouseenter mouseleave');
 
     $('.person:visible').hover(function() {
-      if (Layout.overlayMode || Layout.blurred) return false;
+      if (Layout.overlayMode || Layout.blurred || Detection.transitioning)
+        return false;
   
       var bubble = $(this);
 
@@ -107,7 +108,8 @@ var Interaction = {
         }
       });
   	}, function() { // unhover
-      if (Layout.overlayMode || Layout.blurred) return false;
+      if (Layout.overlayMode || Layout.blurred || Detection.transitioning)
+        return false;
 
       var bubble = $(this);
       var label = $('.label', bubble);

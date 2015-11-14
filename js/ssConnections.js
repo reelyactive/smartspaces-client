@@ -11,9 +11,11 @@ var Connections = {
     
     var JSONs = [];
     $('.person:not(.device):visible').each(function() {
-      var thisJSON = $(this).data('json');
-      thisJSON.id = $(this).attr('id');
-      JSONs.push(thisJSON);
+      if ($(this).css('visibility') != 'hidden') {
+        var thisJSON = $(this).data('json');
+        thisJSON.id = $(this).attr('id');
+        JSONs.push(thisJSON);
+      }
     });
     var excluded = [
       'id', 'companyLogoUrl', 'companyUrl', 'companyTitle', 'facebookUsername',
@@ -64,6 +66,22 @@ var Connections = {
       var pathString = Line.path(points);
       this.points = points;
       this.line.attr({path: pathString});
+    });
+  },
+  
+  hide: function(bubble) {
+    var self = this;
+    var bubbleLines = bubble.data('lines');
+    $(bubbleLines).each(function() { 
+      this.line.attr('stroke-opacity', 0);
+    });
+  },
+  
+  show: function(bubble) {
+    var self = this;
+    var bubbleLines = bubble.data('lines');
+    $(bubbleLines).each(function() { 
+      this.line.attr('stroke-opacity', self.defaultOpacity);
     });
   },
    

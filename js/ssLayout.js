@@ -18,6 +18,7 @@ var Layout = {
   updating: false,
   blurred: false,
   loading: false,
+  firstInit: true,
   ambientCycler: null,
   
   init: function() {
@@ -25,16 +26,21 @@ var Layout = {
     
     console.log('Initializing layout.');
     
-    Detection.hide();
     self.getWindowDimensions();
     self.setBackground();
+    self.setDefaultMode();
     self.setVisibility();
     self.setButtons();
+    self.setFilters();
     self.hideLoader();
     self.calculateSize();
     self.placeObjects();
-    self.revealObjects();
     self.activate();
+    if (SmartSpace.settings.showDetection) {
+      Detection.transition();
+    } else if (self.firstInit) {
+      self.revealObjects();
+    }
     
     if (self.view == 'place') {
       $('.people').hide();
@@ -46,6 +52,8 @@ var Layout = {
         setInterval(ViewChanger.cycleAmbient,
                     SmartSpace.settings.ambientCycleInterval*1000);
     }
+    
+    self.firstInit = false;
   },
   
   activate: function() {
@@ -67,6 +75,13 @@ var Layout = {
   
   newObjects: function() {
     var self = this;
+    if (self.newInOtherView()) {
+      console.log('New, but not this view.');
+      self.placedObjectTypes = [];
+      self.placedObjectTypes.push(self.view);
+      self.updating = false;
+      return false;
+    }
     if (self.tooManyObjects()) {
       console.log('Screen too small / too many objects.');
       self.updating = false;
@@ -110,6 +125,14 @@ var Layout = {
     $('body').css('background-position', '0% '+dayFraction+'%');
   },
   
+  setDefaultMode: function() {
+    var self = this;
+    if (self.firstInit) {
+      if ($('.person:not(.device)').length == 0)
+        self.view = 'devices';
+    }
+  },
+  
   setVisibility: function() {
     var self = this;
     if (self.view == 'people') {
@@ -148,8 +171,8 @@ var Layout = {
   hideLoader: function() {
     var self = this;
     if (self.loading) {
-      $('#header').show();
-      if (Layout.desktop()) $('#footer').show();
+      //$('#header').fadeIn(1000);
+      //if (Layout.desktop()) $('#footer').fadeIn(1000);
       $('#loading').remove();
       $('#title').show();
 
@@ -215,16 +238,17 @@ var Layout = {
     return $('.person:visible:not(.placed)').length > 0;
   },
   
+  newInOtherView: function() {
+    var self = this;
+    var noNewPeople = self.view == 'people'
+      && $('.person:visible:not(.placed):not(.device)').length == 0;
+    var noNewDevices = self.view == 'device'
+      && $('.person.device:visible:not(.placed)').length == 0;
+    return (noNewPeople || noNewDevices);
+  },
+  
   placeNewObjects: function() {
     var self = this;
-    
-    if (self.view == 'people'
-        && $('.person:visible:not(.placed):not(.device)').length == 0) {
-      console.log('New, but not this view.');
-      self.placedObjectTypes = [];
-      self.placedObjectTypes.push(self.view);
-      return false;
-    }
     
     console.log('Placing new');
     var avoidedObjects = $('.person:visible, .avoid');
@@ -241,7 +265,9 @@ var Layout = {
         var randX =
           Utils.randomNumber(0, winWidth-bubble.outerWidth());
         var randY =
-          Utils.randomNumber($('#header').height(), winHeight-bubble.outerHeight());
+          Utils.randomNumber(
+            $('#header').height(), winHeight-bubble.outerHeight()-$('#footer').height()
+          );
         bubble.css({left: randX, top: randY});
         i++;
         //console.log(i + ' placement tries.');
@@ -250,6 +276,7 @@ var Layout = {
       console.log(i + ' placement tries.');
       if (i < maxTries) { // space found
         bubble.addClass('placed');
+        bubble.css({opacity: 1});
         bubble.data('startX', bubble.css('left'));
         bubble.data('startY', bubble.css('top'));
       } else {
@@ -284,7 +311,7 @@ var Layout = {
     var min_x = 0;
     var max_x = winWidth - objectSize;
     var min_y = $('#header').height();
-    var max_y = winHeight - objectSize - $('#footer:visible').height();
+    var max_y = winHeight - objectSize - $('#footer').height();
 
     var middleX = (min_x + max_x) / 2;
     var middleY = (min_y + max_y) / 2;
@@ -335,9 +362,14 @@ var Layout = {
       var person = $(orderingArray[i]);
       var x = i % calc.maxColumns;
       var y = Math.floor(i / calc.maxColumns);
+      
+      var noiseLevel = 20;
+      var xNoise = Utils.randomNumber(0, noiseLevel);
+      var yNoise = Utils.randomNumber(0, noiseLevel);
+      
       person.css({
-        left: x * calc.objectSize + leftOffset,
-        top: y * calc.objectSize + topOffset
+        left: x * calc.objectSize + leftOffset + xNoise,
+        top: y * calc.objectSize + topOffset + yNoise
       });
       person.addClass('placed');
       person.data('startX', person.css('left'));
@@ -345,12 +377,6 @@ var Layout = {
     }
 
     return true;
-  },
-
-  revealObjects: function() {
-    $('.person').each(function() {
-      $(this).css({padding: 0, opacity: 1});
-    });
   },
   
   setLabelTops: function() {
@@ -389,6 +415,12 @@ var Layout = {
       ViewChanger.buttons();
     }
   },
+  
+  setFilters: function() {
+    var self = this;
+    if (self.mobile()) return false;
+    Areas.init();
+  },
 
   showConnectButton: function() {
     $('#connect-button').fadeIn(1000);
@@ -399,6 +431,20 @@ var Layout = {
     fadeLoop();
   },
   
+  revealObjects: function() {
+    var self = this;
+    $('.person').each(function() {
+      $(this).css({padding: 0, opacity: 1});
+    });
+    if (self.mobile()) {
+      $('#header').show();
+    } else {
+      $('#header').fadeIn(1000);
+      if (self.desktop()) $('#footer').fadeIn(1000);
+      $('#svg').fadeTo(500, 1);
+    }
+  },
+  
   getWindowDimensions: function() {
     winWidth = $(window).width();
     winHeight = $(window).height();
@@ -406,91 +452,6 @@ var Layout = {
   
 };
 
-
-var ViewChanger = {
-  
-  buttons: function() {
-    var self = this;
-    $('.button[data-view="'+Layout.view+'"]', '#footer').addClass('selected');
-    $('.button', '#footer').unbind('click');
-    $('.button', '#footer').click(function() {
-      if (!$(this).hasClass('selected')) {
-        $('.button', '#footer').removeClass('selected');
-        $(this).addClass('selected');
-        var newView = $(this).data('view');
-        self.switchTo(newView);
-      }
-    })
-  },
-
-  mobileButtons: function() {
-    var self = this;
-    $('.selector', '#mobile-menu').unbind('click');
-    $('.selector', '#mobile-menu').click(function() {
-      Layout.view = $(this).data('view');
-      $('#header').fadeOut(200);
-      $('.button[data-view="'+Layout.view+'"]', '#footer').addClass('selected');
-      $('#mobile-menu').fadeOut(200, function() {
-        $('#footer').fadeIn(200);
-        $('#'+Layout.view).fadeIn(200, function() {
-          if (Layout.view == 'place') SocialScene.init();
-          if (Layout.view == 'people') Layout.init();
-        });
-      });
-      self.buttons();
-    });
-  },
-
-  switchTo: function(newView) {
-    var self = this;
-    
-    Layout.view = newView;
-    
-    Motion.stop();
-    $('#people').hide();
-    $('#place').hide();
-    $('#'+Layout.view).show();
-
-    if (Layout.desktop()) {
-      $('body').removeClass('people place devices');
-      $('body').addClass(Layout.view);
-    }
-
-    if (Layout.view == 'people' || Layout.view == 'devices') {
-      $('#people').show();
-      $('#svg').show();
-      if (Layout.desktop()) {
-        Layout.setVisibility();
-        if (Layout.placedObjectTypes.indexOf(Layout.view) < 0 || $('.person:visible:not(.placed)')) {
-          console.log('Placing ' + Layout.view + ' view.');
-          Layout.placeObjects();
-        }
-        Layout.switchSize();
-        Connections.clear();
-        Connections.draw();
-      }
-      Interaction.setHovers();
-      Interaction.instrumentIcons();
-      Motion.start();
-    }
-
-    if (Layout.view == 'place') {
-      $('#title.people').hide();
-      $('#svg').hide();
-      SocialScene.init();
-    }
-  },
-
-  cycleAmbient: function() {
-    var self = this;
-    if (Layout.view == 'people') {
-      self.switchTo('place');
-    } else {
-      self.switchTo('people');
-    }
-  },
-  
-}
 
 $(window).blur(function(){
   Layout.blurred = true;
@@ -505,5 +466,5 @@ $(window).focus(function(){
 $(window).resize(function() {
   Layout.getWindowDimensions();
   paper.setSize(winWidth, winHeight);
-  if (Layout.desktop()) Social.sizeLayout();
+  if (Layout.desktop()) SocialScene.sizeLayout();
 });

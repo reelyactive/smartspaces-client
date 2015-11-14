@@ -1,6 +1,9 @@
 var Detection = {
   
   data: null,
+  active: true,
+  transitioning: false,
+  intervals: [],
   
   init: function(data) {
     var self = this;
@@ -54,21 +57,34 @@ var Detection = {
 
     graph.nodes = nodes;
     
+    
     $('.num-sensors').html(numReceivers);
+    if (numReceivers == 1) {
+      $('.sensors-are').html('is');
+      $('.sensors-plural').html('sensor');
+    }
     $('#detection-text').show();
     $('.sensors-text').fadeTo(1000, 1).delay(2000).fadeTo(2000, 0.7);
-    $('.looking-text').delay(3000).fadeTo(1000, 1).delay(2000).fadeTo(2000, 0.7);
-    $('.devices-text').delay(4500).fadeTo(1000, 1);
-    $('.people-text').delay(8000).fadeTo(1000, 1);
+    $('.looking-text').delay(2000).fadeTo(1000, 1).delay(2000).fadeTo(2000, 0.7);
+    $('.devices-text').delay(3000).fadeTo(1000, 1);
+    $('.people-text').delay(6000).fadeTo(1000, 1);
     
-    setTimeout(function() {
-      $('.show-context').css('display','inline-block').show().fadeTo(1000, 0.8);
-    }, 9500);
-    $('.show-context').click(function() {
-      Layout.init();
-    });
+    function initCheck() {
+      if (Parser.complete() && Detection.allPulsed()) {
+        Layout.init();
+      } else {
+        setTimeout(initCheck, 1000);
+      }
+    }
+    
+    setTimeout(initCheck, 7000);
     
     self.render(graph);
+    
+    $('#graph-svg').hide();
+    setTimeout(function() {
+      $('#graph-svg').show();
+    }, 2000)
   },
 
   transformDataToGraph: function() {
@@ -133,6 +149,7 @@ var Detection = {
     var color = d3.scale.category10();
     
     Layout.getWindowDimensions();
+    
     var force = d3.layout.force()
         .charge(-1500)
         .gravity(0.4)
@@ -181,78 +198,96 @@ var Detection = {
       $(this).remove();
     });
     
-    function distance(x1, y1, x2, y2) {
-      var a = x1 - x2;
-      var b = y1 - y2;
-      return Math.sqrt( a*a + b*b );
-    }
+    self.receiverDiv = $('.receiver-node');
     
-    function highlightDevice(device, deviceLabel) {
-      device.fadeTo(200, 0.8).fadeTo(300, 0.5);
-      deviceLabel.fadeTo(200, 1.0).delay(1000).fadeTo(1000, 0);
-      if (!device.is("[detected]")) {
-        numDetected++;
-        $('.num-detected').html(numDetected);
-        if (numDetected == 1) {
-          $('.detected-clause').html('device has');
-        } else {
-          $('.detected-clause').html('devices have')
-        }
-        device.attr('detected', 'true');
+    numDetected = 0;
+    self.pulseDelay = 2;
+    $($('.graph-node-4').get().reverse()).each(function() {
+      self.showReceiver($(this), self.pulseDelay);
+      self.pulseDelay += 1;
+    });
+    
+    $('#pulse-svg').remove();
+  },
+  
+  highlightDevice: function(device, deviceLabel) {
+    var self = this;
+    
+    if (!self.active) return false;
+    
+    device.fadeTo(200, 0.8).fadeTo(300, 0.5);
+    deviceLabel.fadeTo(200, 1.0).delay(1000).fadeTo(1000, 0);
+    if (!device.is("[detected]")) {
+      numDetected++;
+      $('.num-detected').html(numDetected);
+      if (numDetected == 1) {
+        $('.detected-clause').html('device has');
+      } else {
+        $('.detected-clause').html('devices have')
       }
+      device.attr('detected', 'true');
     }
+  },
+  
+  showReceiver: function(receiverNode) {
+    var self = this;
     
-    var receiverDiv = $('.receiver-node');
+    var x = receiverNode.attr('cx');
+    var y = receiverNode.attr('cy');
+    var id = receiverNode.attr('title');
     
-    function showReceiver(receiverNode) {
-      var x = receiverNode.attr('cx');
-      var y = receiverNode.attr('cy');
-      var id = receiverNode.attr('title');
-      
-      receiverDiv
+    self.receiverDiv
         .clone()
         .appendTo('body')
         .removeClass('dummy')
         .css({left: x+'px', top: y+'px'})
-        .delay(2000)
-        .fadeTo(1000, 1.0);
-      
-      var pulseX = parseFloat(x) + receiverDiv.width()/2;
-      var pulseY = parseFloat(y) + receiverDiv.height()/2;
-      
-      $('.device-node', '#'+id).each(function() {
-        var deviceId = $(this).attr('id');
-        var device = $('.device-node-dot', '#'+deviceId);
-        var deviceLabel = $('.device-node-label', '#'+deviceId);
-        var dist = distance(device.offset().left, device.offset().top, pulseX, pulseY);
-        setTimeout(function() {
-          highlightDevice(device, deviceLabel);
-          setInterval(function() {
-            highlightDevice(device, deviceLabel);
-          }, 5000);
-        }, dist*20+300+(delay*1000));
-      });
-      
-      var pulse = $('#pulse-container').clone().attr('transform','translate('+pulseX+','+pulseY+')');
-      $('animateTransform', pulse).attr('begin', delay+'s');
-      $('animate', pulse).attr('begin', delay+'s');
-      pulse.appendTo('#graph-svg');
-      receiverNode.remove();
-      
-      setInterval(function() {
-        var numPeople = $('.person:not(.device)').length;
-        $('.num-people').html(numPeople);
-      }, 5000);
-    }
+        .attr('id', 'receiver'+id)
+        .delay(1000)
+        .fadeTo(500, 1.0);
     
-    numDetected = 0;
-    var delay = 3;
-    $($('.graph-node-4').get().reverse()).each(function() {
-      showReceiver($(this), delay);
-      delay += 1;
+    var pulseX = parseFloat(x) + self.receiverDiv.outerWidth()/2;
+    var pulseY = parseFloat(y) + self.receiverDiv.outerHeight()/2;
+    
+    $('.device-node', '#'+id).each(function() {
+      var deviceId = $(this).attr('id');
+      var device = $('.device-node-dot', '#'+deviceId);
+      var deviceLabel = $('.device-node-label', '#'+deviceId);
+      var dist = Utils.distance(device.offset().left, device.offset().top, pulseX, pulseY);
+      setTimeout(function() {
+        self.highlightDevice(device, deviceLabel);
+        var interval = setInterval(function() {
+          self.highlightDevice(device, deviceLabel);
+        }, 5000);
+        self.intervals.push(interval);
+      }, dist*20+300+(self.pulseDelay*1000));
     });
     
-    $('#pulse-svg').remove();
+    var pulse = $('#pulse-container').clone().attr('transform','translate('+pulseX+','+pulseY+')');
+    $('animateTransform', pulse).attr('begin', self.pulseDelay+'s');
+    $('animate', pulse).attr('begin', self.pulseDelay+'s');
+    pulse.appendTo('#graph-svg');
+    receiverNode.remove();
+    
+    setTimeout(function() {
+      $('#'+id+'.receiver-container').addClass('pulsed');
+    }, self.pulseDelay*1000);
+    
+    var interval = setInterval(function() {
+      var numPeople = $('.person:not(.device)').length;
+      $('.num-people').html(numPeople);
+      if (numPeople > 0) $('.people-text').css({visibility: 'visible'});
+    }, 5000);
+    self.intervals.push(interval);
+  },
+  
+  allPulsed: function() {
+    var self = this;
+    
+    if ($('.receiver-container:not(.pulsed)').length > 0) {
+      return false;
+    } else {
+      return true;
+    }
   },
   
   addInfo: function(id, info, itemType) {
@@ -272,6 +307,85 @@ var Detection = {
     $('.receiver-node').hide();
     $('#graph-svg').remove();
     $('#detection-text').hide();
+  },
+  
+  transition: function() {
+    var self = this;
+    
+    self.active = false;
+    self.transitioning = true;
+    
+    Motion.stop();
+    
+    $('.person:visible').each(function() {
+      var bubble = $(this);
+      var id = bubble.data('deviceID');
+      var bubblePos = bubble.offset();
+      var deviceNode =  $('#'+id+'.device-node');
+      if (deviceNode.length == 0) {
+        receiverNode = $('#receiver'+id);
+        deviceNode = $('.device-node')
+          .first().clone().removeClass('dummy')
+          .css({
+            left: parseInt(receiverNode.css('left'))+11+'px',
+            top: parseInt(receiverNode.css('top'))+11+'px',
+            zIndex: 0
+          });
+        deviceNode.appendTo('body');
+      }
+      
+      deviceNode.addClass('persist');
+      
+      $('.device-node-label', deviceNode).remove();
+      
+      var nodeX = bubblePos.left + bubble.outerWidth()/2 - deviceNode.outerWidth()/2;
+      var nodeY = bubblePos.top + bubble.outerHeight()/2 - deviceNode.outerHeight()/2;
+      
+      var width = bubble.css('width');
+      var height = bubble.css('height');
+      var left = parseInt(bubble.css('left')) + parseInt(bubble.css('border-left-width'));
+      var top = parseInt(bubble.css('top')) + parseInt(bubble.css('border-left-width'));
+      
+      deviceNode.delay(2000).animate({left: nodeX, top: nodeY}, 800, 'easeInOutQuad', function() {
+        $(this).animate({left: left+'px', top: top+'px'}, 500, 'easeInOutQuad');
+        var nodeDot = $('.device-node-dot', $(this));
+        nodeDot.animate({width: width, height: height, opacity: 0.2},
+          500, 'easeInOutQuad', function() {
+            $(this).parent().fadeOut(300, function() {
+              $(this).remove();
+            }
+          );
+          $('#svg').fadeTo(300, 1.0);
+          bubble.fadeTo(300, 1.0);
+        });
+      });
+    });
+    
+    var persistingDots = $('.device-node.persist .device-node-dot');
+    if (Layout.view == 'people') {
+      persistingDots.fadeTo(100, 1).delay(200).fadeTo(100, 0.5).delay(200).fadeTo(100, 1);
+    } else {
+      persistingDots.fadeTo(300, 1);
+    }
+    
+    $('#graph-svg').delay(1000).fadeOut(500);
+    
+    $('.device-node:not(.persist)').delay(1000).fadeOut(500, function() {
+      $(this).remove();
+    });
+    $('.receiver-node').delay(1500).fadeOut(500);
+    $('#detection-text').delay(2000).fadeOut(500);
+    
+    setTimeout(function() {
+      Motion.resume();
+      self.transitioning = false;
+      $('#header').fadeIn(1000);
+      if (Layout.desktop()) $('#footer').fadeIn(1000);
+      
+      $.each(self.intervals, function(key, interval) {
+        clearInterval(interval);
+      });
+    }, 3800);
   }
   
 }

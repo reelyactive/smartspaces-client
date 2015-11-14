@@ -17,9 +17,9 @@ var SmartSpace = {
     self.setRefresher();
 
     $.getJSON(self.jsonURL, function(data) {
-      Detection.init(data);
+      if (self.settings.showDetection) Detection.init(data);
       Parser.parse(data);
-      //Layout.init();
+      if (!self.settings.showDetection) Layout.init();
     });
   },
   
@@ -64,7 +64,8 @@ var SmartSpace = {
     
     self.settings = {
       refreshInterval: 60,
-      ambientCycleInterval: 10
+      ambientCycleInterval: 10,
+      showDetection: true
     };
 
     $.ajax({
@@ -73,11 +74,15 @@ var SmartSpace = {
       dataType: 'json',
       success: function(data) {
         $.each(data, function(id, info) {
+          if (info == 'true' || info == 'false') // parse boolean
+            info = info == 'true';
           self.settings[id] = info;
         });
       },
       async: false
     });
+    
+    if (Layout.mobile()) self.settings.showDetection = false;
   },
   
   getServices: function() {
@@ -106,7 +111,9 @@ var SmartSpace = {
     Layout.updating = true;
     info['cormorant'] = encodeURIComponent(item['url']);
     Detection.addInfo(id, info, itemType);
-    var thisOccupant = new Occupant(itemType+id, info, itemType);
+    var nearest = [];
+    if (item.hasOwnProperty('nearest')) nearest = item['nearest'];
+    var thisOccupant = new Occupant(id, info, itemType, nearest);
     thisOccupant.insert();
   },
   
@@ -121,7 +128,7 @@ var SmartSpace = {
     
     Layout.setBackground();
     
-    if (Layout.overlayMode || Layout.hovering) return false;
+    if (Layout.overlayMode || Layout.hovering || Layout.mobile()) return false;
     
     console.log('Refreshing.');
     
@@ -165,36 +172,48 @@ var Parser = {
   cachedURLs: {},
   deadURLs: [],
   refreshing: false,
+  items: {},
+  checkedItems: [],
   
   parse: function(data, refreshing) {
     var self = this;
+    
     self.refreshing = refreshing;
     SmartSpace.ids = [];
+    Areas.clear();
+    self.items = {};
+    self.checkedItems = [];
+    
     if (data.hasOwnProperty('devices')) {
       $('#devices-button').removeClass('hidden');
       self.parseItems(data.devices, 'device');
     } else {
       self.parseItems(data);
     }
+    
     if (self.refreshing && Layout.updating) {
       Layout.newObjects();
     }
+    
+    Areas.populateMenu();
   },
   
   parseItems: function(items, itemType) {
     var self = this;
     itemType = typeof itemType !== 'undefined' ? itemType : 'person';
+    self.items = items;
     $.each(items, function(id, thisItem) {
       self.parseItem(id, thisItem, itemType);
     });
   },
   
-  parseItem: function(id, item, itemType) {
+  parseItem: function(id, item, itemType, itemNum) {
     var self = this;
     if (item.hasOwnProperty('url')) {
       var url = item['url'];
       if (self.deadURLs.indexOf(url) > -1) {
-        console.log('Not checking dead URL: ' + url);
+        console.log('Not checking bad URL: ' + url);
+        self.checkedItems.push(item);
         return false;
       }
       if (itemType == 'person') {
@@ -206,17 +225,59 @@ var Parser = {
         if (self.cachedURLs.hasOwnProperty(url)) {
           var info = self.cachedURLs[url];
           self.parseInfo(id, item, itemType, info);
+          self.checkedItems.push(item);
         } else {
+          var jsonFound = false;
+          var info;
           $.ajax({
             type: 'GET',
             url: url,
-            dataType: 'json',
-            success: function(info) {
-              self.cachedURLs[url] = info;
-              self.parseInfo(id, item, itemType, info);
+            success: function(data, status, jqXHR) {
+              var resType = jqXHR.getResponseHeader('content-type');
+              console.log(resType);
+              if (resType.indexOf('application/json') >= 0) {
+                jsonFound = true;
+                info = data;
+              } else if (resType.indexOf('text/html') >= 0) {
+                info = self.parseHTML(data);
+                if (info != null) jsonFound = true;
+              } else if (resType.indexOf('text/plain') >= 0) {
+                info = $.parseJSON(data);
+                if (info.hasOwnProperty('person')
+                    || info.hasOwnProperty('device'))
+                  jsonFound = true;
+              }
+              if (jsonFound) {
+                self.processJSON(url, info, id, item, itemType);
+              } else {
+                self.noJSON(url, item);
+              }
             },
             error: function(req, msg) {
-              self.deadURLs.push(url);
+              if (msg == 'error') {
+                // last resort: try proxy
+                console.log('Trying proxy');
+                $.post('/remote', { url: url }, function(res) {
+                  $.ajax({
+                    type: 'GET',
+                    url: '/remote/'+res.hash,
+                    success: function(data) {
+                      //console.log('Proxy response:');
+                      //console.log(data);
+                      info = self.parseHTML(data);
+                      if (info != null) {
+                        self.processJSON(url, info, id, item, itemType);
+                      } else {
+                        self.noJSON(url, item);
+                      }
+                    },
+                    error: function(req, msg) {
+                      self.noJSON(url, item);
+                    },
+                    async: false
+                  });
+                });
+              }
             },
             async: false
           });
@@ -225,7 +286,32 @@ var Parser = {
     } else { //non-hyperlocal
       SmartSpace.ids.push(id);
       SmartSpace.addOccupant(self.refreshing, id, item, item);
+      self.checkedItems.push(item);
     }
+  },
+  
+  parseHTML: function(page) {
+    var jsonFound = false;
+    var info;
+    $(page).filter('script').each(function() {
+      if($(this).attr('type') == 'application/ld+json'
+         && !jsonFound) {
+        info = $.parseJSON(this.text);
+        jsonFound = true;
+      }
+    });
+    if (jsonFound) {
+      return info;
+    } else {
+      return null;
+    }
+  },
+  
+  processJSON: function(url, info, id, item, itemType) {
+    var self = this;
+    self.cachedURLs[url] = info;
+    self.parseInfo(id, item, itemType, info);
+    self.checkedItems.push(item);
   },
   
   parseInfo: function(id, item, itemType, info) {
@@ -234,11 +320,15 @@ var Parser = {
       $.each(info['@graph'], function() {
         var type = this['@type'].split(':')[1].toLowerCase();
         if (type == 'product') type = 'device';
-        SmartSpace.ids.push(type+id);
         var info = self.scanForAttributes(this);
-        SmartSpace.addOccupant(
-          self.refreshing, id, info, item, type
-        );
+        if (type == 'place') {
+          Areas.addArea(id, info);
+        } else {
+          SmartSpace.ids.push(type+id);
+          SmartSpace.addOccupant(
+            self.refreshing, id, info, item, type
+          );
+        }
       });
     } else {
       if (itemType == 'device') {
@@ -274,6 +364,21 @@ var Parser = {
       });
     });
     return info;
+  },
+  
+  noJSON: function(url, item) {
+    var self = this;
+    self.deadURLs.push(url);
+    self.checkedItems.push(item);
+  },
+  
+  complete: function() {
+    if (Object.keys(Parser.items).length <= Parser.checkedItems.length
+        && Parser.checkedItems.length > 0) {
+      return true;
+    } else {
+      return false;
+    }
   }
   
 };

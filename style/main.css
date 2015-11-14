@@ -148,9 +148,9 @@ body.people, body.devices {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
+  width: 98%;
   height: 80px;
-  padding-left: 15px;
+  padding-left: 2%;
   font-weight: 300;
   color: white;
   font-size: 30px;
@@ -326,6 +326,7 @@ body.mobile #footer .button {
 
 .person {
   z-index: 10;
+  opacity: 0;
   position: absolute;
   text-align: center;
   -moz-background-clip: padding;     /* Firefox 3.6 */
@@ -1057,6 +1058,7 @@ textarea, input { outline: none; }
   z-index: 0;
   width: 1000px;
   height: 1000px;
+  opacity: 0;
 }
 
 .connectionLabel {
@@ -1083,10 +1085,16 @@ textarea, input { outline: none; }
   background-color: #ffa200;
   position: absolute;
   opacity: 0;
+  border: 6px solid black;
+  z-index: 1;
+  -webkit-box-shadow: 0px 0px 15px 0px rgba(255,255,255,1);
+  -moz-box-shadow: 0px 0px 15px 0px rgba(255,255,255,1);
+  box-shadow: 0px 0px 15px 0px rgba(255,255,255,1);
 }
 
 .device-node {
   position: absolute;
+  z-index: 9;
 }
 
 .device-node-dot {
@@ -1117,6 +1125,8 @@ textarea, input { outline: none; }
   display: none;
   color: white;
   width: 100%;
+  font-weight: 300;
+  font-style: italic;
 }
 
 .sensors-text, .looking-text, .devices-text, .people-text {
@@ -1124,6 +1134,10 @@ textarea, input { outline: none; }
   display: block;
   opacity: 0;
   margin-bottom: 5px;
+}
+
+.people-text {
+  visibility: hidden;
 }
 
 .show-context {
@@ -1159,4 +1173,112 @@ textarea, input { outline: none; }
 #graph-svg {
     height: 100vh;
     width: 100vw;
+}
+
+#filter-button {
+  display: inline-block;
+  display: none;
+  float: right;
+  background-color: black;
+  color: white;
+  margin-top: 20px;
+  height: 30px;
+  padding: 15px;
+  width: 200px;
+  text-align: center;
+  line-height: 24px;
+  font-size: 24px;
+  font-weight: 300;
+  font-style: italic;
+  -webkit-border-top-left-radius: 15px;
+  -moz-border-radius-topleft: 15px;
+  border-top-left-radius: 15px;
+  background: #4b4b56; /* Old browsers */
+  background: -moz-linear-gradient(top,  #4b4b56 0%, #2f2f34 100%); /* FF3.6-15 */
+  background: -webkit-linear-gradient(top,  #4b4b56 0%,#2f2f34 100%); /* Chrome10-25,Safari5.1-6 */
+  background: linear-gradient(to bottom,  #4b4b56 0%,#2f2f34 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#4b4b56', endColorstr='#2f2f34',GradientType=0 ); /* IE6-9 */
+}
+
+#filter-button.filtering {
+  color: black;
+  background: #ffce57; /* Old browsers */
+  background: -moz-linear-gradient(top, #ffce57 0%, #ffb541 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#ffce57), color-stop(100%,#ffb541)); /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(top, #ffce57 0%,#ffb541 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top, #ffce57 0%,#ffb541 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(top, #ffce57 0%,#ffb541 100%); /* IE10+ */
+  background: linear-gradient(to bottom, #ffce57 0%,#ffb541 100%); /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffce57', endColorstr='#ffb541',GradientType=0 ); /* IE6-9 */
+}
+
+#filter-button:hover, #filter-button.hovered, #filter-button.filtering.hovered:hover {
+  cursor: pointer;
+  background: black !important;
+  color: white !important;
+}
+
+#filter-menu {
+  color: white;
+  display: inline-block;
+  width: 230px;
+  height: 0;
+  padding: 0;
+  position: absolute;
+  top: 80px;
+  right: 0;
+  z-index: 100;
+}
+
+#filter-menu .menu-bg {
+  background-color: black;
+  width: 230px;
+  height: inherit;
+  opacity: 0.7;
+  -webkit-border-bottom-left-radius: 15px;
+  -moz-border-radius-bottomleft: 15px;
+  border-bottom-left-radius: 15px;
+}
+
+#filter-menu .areas {
+  position: absolute;
+  width: 200px;
+  padding: 15px;
+  height: inherit;
+  top: 0;
+  display: none;
+}
+
+#filter-menu .area {
+  height: 30px;
+  font-size: 20px;
+  line-height: 30px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#filter-menu .area-button {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: black;
+  float: left;
+  opacity: 0.5;
+  margin-top: 5px;
+}
+
+#filter-menu .area:hover .area-button {
+  opacity: 0.5;
+  background-color: white;
+}
+
+#filter-menu .area.clicked .area-button {
+  opacity: 1;
+  background-color: white;
+}
+
+#filter-menu .area-name {
+  display: inline-block;
+  margin-left: 8px;
 }

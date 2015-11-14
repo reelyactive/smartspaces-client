@@ -1,7 +1,10 @@
-var Occupant = function (id, info, itemType) {
+var Occupant = function (id, info, itemType, nearest) {
   var self = this;
   
   itemType = typeof itemType !== 'undefined' ? itemType : 'person'; // default item type
+  
+  var deviceID = id;
+  id = itemType + id;
   
   self.id = id;
   self.info = info;
@@ -26,6 +29,11 @@ var Occupant = function (id, info, itemType) {
   bubble.addClass('person');
   bubble.attr('id', id);
   bubble.data('name', name);
+  bubble.data('deviceID', deviceID);
+  
+  $.each(nearest, function(key, receiver) {
+    bubble.addClass(receiver.device);
+  });
   
   if (info.portraitImageUrl != undefined) {
     bubble.css('background-image', 'url('+info.portraitImageUrl+')');
