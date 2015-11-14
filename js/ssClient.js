@@ -7,10 +7,11 @@ var SmartSpace = {
   init: function(apiURL) {
     var self = this;
 
-    Layout.showLoader();
-
     self.getParams();
     self.getSettings();
+    
+    Layout.showLoader();
+    
     self.getPlaceInfo();
     self.getServices();
     self.jsonURL = Utils.getJsonURL();
@@ -65,7 +66,8 @@ var SmartSpace = {
     self.settings = {
       refreshInterval: 60,
       ambientCycleInterval: 10,
-      showDetection: true
+      showDetection: true,
+      forcedBackground: ''
     };
 
     $.ajax({
@@ -257,25 +259,29 @@ var Parser = {
               if (msg == 'error') {
                 // last resort: try proxy
                 console.log('Trying proxy');
-                $.post('/remote', { url: url }, function(res) {
-                  $.ajax({
-                    type: 'GET',
-                    url: '/remote/'+res.hash,
-                    success: function(data) {
-                      //console.log('Proxy response:');
-                      //console.log(data);
-                      info = self.parseHTML(data);
-                      if (info != null) {
-                        self.processJSON(url, info, id, item, itemType);
-                      } else {
+                $.ajax({
+                  type: 'POST',
+                  url: '/remote/',
+                  data: { url: url },
+                  success: function(res) {
+                    $.ajax({
+                      type: 'GET',
+                      url: '/remote/'+res.hash,
+                      success: function(data) {
+                        info = self.parseHTML(data);
+                        if (info != null) {
+                          self.processJSON(url, info, id, item, itemType);
+                        } else {
+                          self.noJSON(url, item);
+                        }
+                      },
+                      error: function(req, msg) {
                         self.noJSON(url, item);
-                      }
-                    },
-                    error: function(req, msg) {
-                      self.noJSON(url, item);
-                    },
-                    async: false
-                  });
+                      },
+                      async: false
+                    });
+                  },
+                  async: false
                 });
               }
             },
@@ -318,6 +324,7 @@ var Parser = {
     var self = this;
     if (info['@graph']) { //JSON-LD
       $.each(info['@graph'], function() {
+        console.log(this);
         var type = this['@type'].split(':')[1].toLowerCase();
         if (type == 'product') type = 'device';
         var info = self.scanForAttributes(this);
