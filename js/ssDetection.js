@@ -201,10 +201,16 @@ var Detection = {
     self.receiverDiv = $('.receiver-node');
     
     numDetected = 0;
-    self.pulseDelay = 2;
+    var initDelay = 2;
+    var maxDelay = 6;
+    self.pulseDelay = initDelay;
     $($('.graph-node-4').get().reverse()).each(function() {
       self.showReceiver($(this), self.pulseDelay);
-      self.pulseDelay += 1;
+      if (self.pulseDelay >= maxDelay) {
+        self.pulseDelay = initDelay;
+      } else {
+        self.pulseDelay += 1;
+      }
     });
     
     $('#pulse-svg').remove();
