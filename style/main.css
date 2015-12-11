@@ -1,3 +1,19 @@
+.big .label { top: 335px; font-size: 26px; line-height: 24px; }
+.medium .label { top: 225px; font-size: 22px; line-height: 22px; }
+.small .label { top: 170px; font-size: 20px; line-height: 18px; }
+.smaller .label { top: 148px; font-size: 18px; line-height: 18px; }
+.tiny .label { top: 125px; font-size: 16px; line-height: 16px; }
+.tinier .label { top: 104px; font-size: 16px; line-height: 16px; }
+.puny .label { top: 85px; font-size: 14px; line-height: 14px; }
+
+.big .label .company { font-size: 20px; }
+.medium .label .company { font-size: 16px; }
+.small .label .company { font-size: 14px; }
+.smaller .label .company { font-size: 14px; }
+.tiny .label .company { font-size: 12px; }
+.tinier .label .company { font-size: 12px; }
+.puny .label .company { font-size: 10px; }
+
 html{ height:100%; }
 
 @font-face {
@@ -443,27 +459,6 @@ body.darkText .label {
 .label .company {
   font-weight: 300;
 }
-
-.big .label { top: 335px; font-size: 24px; line-height: 24px; }
-.big .label .company { font-size: 20px; }
-
-.medium .label { top: 225px; font-size: 20px; line-height: 20px; }
-.medium .label .company { font-size: 16px; }
-
-.small .label { top: 170px; font-size: 16px; line-height: 16px; }
-.small .label .company { font-size: 14px; }
-
-.smaller .label { top: 148px; font-size: 16px; line-height: 16px; }
-.smaller .label .company { font-size: 14px; }
-
-.tiny .label { top: 125px; font-size: 14px; line-height: 14px; }
-.tiny .label .company { font-size: 12px; }
-
-.tinier .label { top: 104px; font-size: 14px; line-height: 14px; }
-.tinier .label .company { font-size: 12px; }
-
-.puny .label { top: 85px; font-size: 12px; line-height: 12px; }
-.puny .label .company { font-size: 10px; }
 
 .dummy {
   display: none !important;

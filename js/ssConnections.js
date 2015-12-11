@@ -71,6 +71,7 @@ var Connections = {
   
   hide: function(bubble) {
     var self = this;
+    return false;
     var bubbleLines = bubble.data('lines');
     $(bubbleLines).each(function() { 
       this.line.attr('stroke-opacity', 0);
@@ -79,6 +80,7 @@ var Connections = {
   
   show: function(bubble) {
     var self = this;
+    return false;
     var bubbleLines = bubble.data('lines');
     $(bubbleLines).each(function() { 
       this.line.attr('stroke-opacity', self.defaultOpacity);
