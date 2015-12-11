@@ -18,6 +18,7 @@ var SmartSpace = {
 
     $.getJSON(self.jsonURL, function(data) {
       if (self.settings.showDetection) Detection.init(data);
+      console.log(data);
       Parser.parse(data);
       if (!self.settings.showDetection) Layout.init();
     });
@@ -167,6 +168,13 @@ var Parser = {
     companyTitle: ['schema:jobTitle'],
     model: ['schema:model'],
     manufacturer: [{'schema:manufacturer': 'schema:name'}]
+  },
+  
+  socialNetworks: {
+    attribute: 'schema:sameAs',
+    services: {
+      twitter: 'twitter.com/%twitterPersonalScreenName%'
+    }
   },
   
   cachedURLs: {},
@@ -368,6 +376,29 @@ var Parser = {
         }
       });
     });
+    if (info.hasOwnProperty(self.socialNetworks.attribute)) {
+      console.log('Has social URLs');
+      var socialURLs = info[self.socialNetworks.attribute];
+      $.each(socialURLs, function(key, url) {
+        $.each(self.socialNetworks.services, function(serviceName, urlPattern) {
+          var matchString = /([^%]*)%([^%]*)%(.*)/g;
+          var patternArray = matchString.exec(urlPattern);
+          var prefix = patternArray[1];
+          var suffix = patternArray[3];
+          var alias = patternArray[2];
+          var substring = '';
+          var splitArray = [];
+          if (prefix.length > 0)
+            splitArray = url.split(prefix);
+          if (splitArray.length > 1)
+            substring = url.split(prefix)[1];
+          if (suffix.length > 0)
+            substring = substring.split(suffix)[0];
+          if (substring.length > 0)
+            info[alias] = substring;
+        });
+      });
+    }
     return info;
   },
   
