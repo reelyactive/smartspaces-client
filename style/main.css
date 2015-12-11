@@ -1,5 +1,15 @@
 html{ height:100%; }
 
+@font-face {
+  font-family: Optima;
+  src: url(optima.woff);
+}
+
+@font-face {
+  font-family: OptimaBold;
+  src: url(optima-bold.woff);
+}
+
 body {
   background-image: none;
   background: #f1f1f1; /* Old browsers */
@@ -45,9 +55,11 @@ body.mobile #people {
 }
 
 body.people, body.devices {
-  background: #636363; /* Old browsers */
-  background-image: url(bg.png);
-  background-position: 0% 0%;
+  background: #e5e5e5; /* Old browsers */
+  background: -moz-linear-gradient(top,  #e5e5e5 0%, #dbdbdb 100%); /* FF3.6-15 */
+  background: -webkit-linear-gradient(top,  #e5e5e5 0%,#dbdbdb 100%); /* Chrome10-25,Safari5.1-6 */
+  background: linear-gradient(to bottom,  #e5e5e5 0%,#dbdbdb 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e5e5e5', endColorstr='#dbdbdb',GradientType=0 ); /* IE6-9 */
 }
 
 #mobile-home {
@@ -414,10 +426,18 @@ body.desktop .person {
   color: white;
   position: relative;
   float: center;
+  font-family: Optima;
+  color: #049c52;
+  text-shadow: none !important;
+}
+
+body.darkText .label {
+  color: #049c52;
+  text-shadow: none !important;
 }
 
 .label .name {
-  font-weight: 600;
+  font-family: OptimaBold;
 }
 
 .label .company {
@@ -1127,6 +1147,10 @@ textarea, input { outline: none; }
   width: 100%;
   font-weight: 300;
   font-style: italic;
+}
+
+body.darkText #detection-text {
+  color: black;
 }
 
 .sensors-text, .looking-text, .devices-text, .people-text {

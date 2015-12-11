@@ -352,34 +352,43 @@ var Detection = {
       var left = parseInt(bubble.css('left')) + parseInt(bubble.css('border-left-width'));
       var top = parseInt(bubble.css('top')) + parseInt(bubble.css('border-left-width'));
       
+      // move dots into position
       deviceNode.delay(2000).animate({left: nodeX, top: nodeY}, 800, 'easeInOutQuad', function() {
         $(this).animate({left: left+'px', top: top+'px'}, 500, 'easeInOutQuad');
         var nodeDot = $('.device-node-dot', $(this));
+        // expand dots
         nodeDot.animate({width: width, height: height, opacity: 0.2},
           500, 'easeInOutQuad', function() {
             $(this).parent().fadeOut(300, function() {
               $(this).remove();
-            }
-          );
-          $('#svg').fadeTo(300, 1.0);
-          bubble.fadeTo(300, 1.0);
-        });
+            });
+            // fade in connection lines
+            $('#svg').fadeTo(300, 1.0);
+            // fade in bubbles
+            bubble.fadeTo(300, 1.0);
+          }
+        );
       });
     });
     
     var persistingDots = $('.device-node.persist .device-node-dot');
     if (Layout.view == 'people') {
+      // flash devices recognized as people
       persistingDots.fadeTo(100, 1).delay(200).fadeTo(100, 0.5).delay(200).fadeTo(100, 1);
     } else {
       persistingDots.fadeTo(300, 1);
     }
     
+    // fade out expanding pulses
     $('#graph-svg').delay(1000).fadeOut(500);
     
+    // fade out unrecognized dots
     $('.device-node:not(.persist)').delay(1000).fadeOut(500, function() {
       $(this).remove();
     });
+    // fade out receiver dots
     $('.receiver-node').delay(1500).fadeOut(500);
+    // fade out explanation text
     $('#detection-text').delay(2000).fadeOut(500);
     
     setTimeout(function() {

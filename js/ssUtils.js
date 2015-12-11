@@ -6,6 +6,14 @@ var Utils = {
     return Math.sqrt( a*a + b*b );
   },
   
+  textColor: function(bgColor) {
+    var r = parseInt(bgColor.substr(1,2),16);
+    var g = parseInt(bgColor.substr(3,2),16);
+    var b = parseInt(bgColor.substr(5,2),16);
+    var yiq = ((r*299)+(g*587)+(b*114))/1000;
+    return (yiq >= 128) ? 'darkText' : 'lightText';
+  },
+  
   getAreaIdentifier: function() {
     // Identifiers are obtained by slice to remove leading '#' or '/'.
     var identifier = window.location.hash.slice(1);

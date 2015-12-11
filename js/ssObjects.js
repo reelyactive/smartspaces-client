@@ -12,7 +12,9 @@ var Occupant = function (id, info, itemType, nearest) {
   
   var bubble = $('#person-dummy').clone();
   
-  var name = info.firstName + ' ' + info.lastName;
+  var name = info.lastName;
+  if (info.firstName != undefined)
+    name = info.firstName + ' ' + name;
   var company = info.companyName;
   
   if (itemType == 'device') {
@@ -35,9 +37,10 @@ var Occupant = function (id, info, itemType, nearest) {
     bubble.addClass(receiver.device);
   });
   
-  if (info.portraitImageUrl != undefined) {
-    bubble.css('background-image', 'url('+info.portraitImageUrl+')');
-  }
+  //if (info.portraitImageUrl != undefined) {
+    //bubble.css('background-image', 'url('+info.portraitImageUrl+')');
+    bubble.css('background-image', 'url('+defaultPic+')');
+  //}
   
   if (info.twitterPersonalScreenName) {
     bubble.data('twitter', info.twitterPersonalScreenName);

@@ -1,3 +1,7 @@
+noConnections = true;
+showFooter = false;
+defaultPic = 'https://pbs.twimg.com/profile_images/465827196418809856/UJS4BcCF.png';
+
 var SmartSpace = {
   
   ids: [],
@@ -16,7 +20,9 @@ var SmartSpace = {
     self.jsonURL = Utils.getJsonURL();
     self.setRefresher();
 
+    console.log(self.jsonURL);
     $.getJSON(self.jsonURL, function(data) {
+      console.log(data);
       if (self.settings.showDetection) Detection.init(data);
       Parser.parse(data);
       if (!self.settings.showDetection) Layout.init();
@@ -297,13 +303,18 @@ var Parser = {
   parseHTML: function(page) {
     var jsonFound = false;
     var info;
-    $(page).filter('script').each(function() {
-      if($(this).attr('type') == 'application/ld+json'
-         && !jsonFound) {
-        info = $.parseJSON(this.text);
-        jsonFound = true;
-      }
-    });
+    try {
+      info = $.parseJSON(page);
+      jsonFound = true;
+    } catch(e) {
+      $(page).filter('script').each(function() {
+        if($(this).attr('type') == 'application/ld+json'
+           && !jsonFound) {
+          info = $.parseJSON(this.text);
+          jsonFound = true;
+        }
+      });
+    }
     if (jsonFound) {
       return info;
     } else {

@@ -7,7 +7,7 @@ var Connections = {
   
   collect: function() {
     var self = this;
-    if (Layout.mobile()) return false;
+    if (Layout.mobile() || noConnections) return false;
     
     var JSONs = [];
     $('.person:not(.device):visible').each(function() {
@@ -26,7 +26,7 @@ var Connections = {
   
   draw: function() {
     var self = this;
-    if (Layout.mobile()) return false;
+    if (Layout.mobile() || noConnections) return false;
 
     paper = Raphael(document.getElementById('svg'), winWidth, winHeight);
     paper.clear();
@@ -52,7 +52,7 @@ var Connections = {
   
   clear: function() {
     var self = this;
-    if (Layout.mobile()) return false;
+    if (Layout.mobile() || noConnections) return false;
     self.collection = null;
     $('.person').removeData('lines');
     self.lines = [];
@@ -60,7 +60,7 @@ var Connections = {
 
   redraw: function() {
     var self = this;
-    if (Layout.mobile()) return false;
+    if (Layout.mobile() || noConnections) return false;
     $(self.lines).each(function() {
       var points = Line.getPoints(this.person1, this.person2);
       var pathString = Line.path(points);
@@ -87,7 +87,7 @@ var Connections = {
    
   highlight: function(bubble) {
     var self = this;
-    if (Layout.mobile()) return false;
+    if (Layout.mobile() || noConnections) return false;
 
     var bubbleLines = bubble.data('lines');
     $('.label').not($('.label', bubble)).css('opacity', 0.2);
@@ -112,7 +112,7 @@ var Connections = {
   
   unhighlight: function() {
     var self = this;
-    if (Layout.mobile()) return false;
+    if (Layout.mobile() || noConnections) return false;
     $('.label').css('opacity', 1.0);
     $('.person').css('opacity', 1.0);
     self.reset();
@@ -120,7 +120,7 @@ var Connections = {
   
   dim: function() {
     var self = this;
-    if (Layout.mobile()) return false;
+    if (Layout.mobile() || noConnections) return false;
     paper.forEach(function (el) {
       el.attr('stroke-opacity', self.dimOpacity);
     });
@@ -129,7 +129,7 @@ var Connections = {
 
   reset: function() {
     var self = this;
-    if (Layout.mobile()) return false;
+    if (Layout.mobile() || noConnections) return false;
     paper.forEach(function (el) {
       el.attr('stroke-opacity', self.defaultOpacity);
     });

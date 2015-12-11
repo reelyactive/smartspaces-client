@@ -120,9 +120,12 @@ var Layout = {
   },
   
   setBackground: function() {
+    return true;
     if (SmartSpace.placeInfo.hasOwnProperty('forcedBackground')
         && SmartSpace.placeInfo.forcedBackground != '') {
       $('body').css('background', SmartSpace.placeInfo.forcedBackground);
+      var textColor = Utils.textColor(SmartSpace.placeInfo.forcedBackground);
+      $('body').addClass(textColor);
     } else {
       var d = new Date(), e = new Date(d);
       var dayFraction = (e - d.setHours(0,0,0,0)) / 10 / 86400;
@@ -445,7 +448,7 @@ var Layout = {
       $('#header').show();
     } else {
       $('#header').fadeIn(1000);
-      if (self.desktop()) $('#footer').fadeIn(1000);
+      if (self.desktop() && showFooter) $('#footer').fadeIn(1000);
       $('#svg').fadeTo(500, 1);
     }
   },
