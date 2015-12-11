@@ -473,6 +473,6 @@ $(window).focus(function(){
 
 $(window).resize(function() {
   Layout.getWindowDimensions();
-  paper.setSize(winWidth, winHeight);
+  //paper.setSize(winWidth, winHeight);
   if (Layout.desktop()) SocialScene.sizeLayout();
 });
