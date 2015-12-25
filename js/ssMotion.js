@@ -17,7 +17,7 @@ var Motion = {
   
   stop: function() {
     var self = this;
-    if (Layout.mobile()) return false;
+    if (Layout.mobile() || !self.moving) return false;
     $.each(self.walkers, function(index, thisWalker) {
       thisWalker.pathAnimator.stop();
     });

@@ -37,6 +37,7 @@ var Layout = {
     self.placeObjects();
     self.activate();
     if (SmartSpace.settings.showDetection) {
+      console.log('TRANSITIONING')
       Detection.transition();
     } else if (self.firstInit) {
       self.revealObjects();

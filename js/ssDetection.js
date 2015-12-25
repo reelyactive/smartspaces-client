@@ -1,8 +1,11 @@
 var Detection = {
   
   data: null,
+  graph: null,
   active: true,
+  numReceivers: 0,
   transitioning: false,
+  allDetected: false,
   intervals: [],
   
   init: function(data) {
@@ -13,9 +16,19 @@ var Detection = {
       return true;
     }
     
+    lastNumDetected = -1;
+    
+    self.data = data;
+    self.createGraph();
+    
+    if (self.numReceivers == 0) {
+      return false;
+    }
+    
     self.data = data;
     $('#loading').remove();
-    self.createGraph();
+    self.initUI();
+    return true;
   },
 
   createGraph: function() {
@@ -38,14 +51,13 @@ var Detection = {
       nodes.push(t);
     });
 
-    var numReceivers = 0;
     graph.links.forEach(function(e) {
       var receiverContainer = $('#'+e.target+'.receiver-container');
       if (receiverContainer.length == 0) {
         receiverContainer = $('<div></div>');
         receiverContainer.attr({id: e.target, class: 'receiver-container'})
         receiverContainer.appendTo('body');
-        numReceivers++;
+        self.numReceivers++;
       }
       var deviceDiv = $('.device-node').first().clone();
       deviceDiv.attr('id', e.source);
@@ -57,9 +69,14 @@ var Detection = {
 
     graph.nodes = nodes;
     
+    self.graph = graph;
+  },
+  
+  initUI: function() {
+    var self = this;
     
-    $('.num-sensors').html(numReceivers);
-    if (numReceivers == 1) {
+    $('.num-sensors').html(self.numReceivers);
+    if (self.numReceivers == 1) {
       $('.sensors-are').html('is');
       $('.sensors-plural').html('sensor');
     }
@@ -70,7 +87,7 @@ var Detection = {
     $('.people-text').delay(6000).fadeTo(1000, 1);
     
     function initCheck() {
-      if (Parser.complete() && Detection.allPulsed()) {
+      if (Parser.complete() && self.allDetected) {
         Layout.init();
       } else {
         setTimeout(initCheck, 1000);
@@ -79,7 +96,7 @@ var Detection = {
     
     setTimeout(initCheck, 7000);
     
-    self.render(graph);
+    self.render(self.graph);
     
     $('#graph-svg').hide();
     setTimeout(function() {
@@ -214,6 +231,12 @@ var Detection = {
     });
     
     $('#pulse-svg').remove();
+    
+    var interval = setInterval(function() {
+      if (lastNumDetected == numDetected) self.allDetected = true;
+      lastNumDetected = numDetected;
+    }, 2000);
+    self.intervals.push(interval);
   },
   
   highlightDevice: function(device, deviceLabel) {
@@ -276,7 +299,7 @@ var Detection = {
     
     setTimeout(function() {
       $('#'+id+'.receiver-container').addClass('pulsed');
-    }, self.pulseDelay*1000);
+    }, 5000 + self.pulseDelay*1000);
     
     var interval = setInterval(function() {
       var numPeople = $('.person:not(.device)').length;
@@ -288,10 +311,11 @@ var Detection = {
   
   allPulsed: function() {
     var self = this;
-    
     if ($('.receiver-container:not(.pulsed)').length > 0) {
+      console.log('NOT ALL PULSED');
       return false;
     } else {
+      console.log('ALL PULSED');
       return true;
     }
   },

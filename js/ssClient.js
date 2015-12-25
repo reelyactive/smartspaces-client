@@ -17,7 +17,9 @@ var SmartSpace = {
     self.setRefresher();
 
     $.getJSON(self.jsonURL, function(data) {
-      if (self.settings.showDetection) Detection.init(data);
+      if (self.settings.showDetection) { 
+        self.settings.showDetection = Detection.init(data);
+      }
       console.log(data);
       Parser.parse(data);
       if (!self.settings.showDetection) Layout.init();
@@ -108,7 +110,9 @@ var SmartSpace = {
 
   addOccupant: function(refreshing, id, info, item, itemType) {
     var self = this;
-    if (!self.isNewOccupant(id, itemType)) return false;
+    if (!self.isNewOccupant(id, itemType) || itemType === undefined) return false;
+    console.log(itemType);
+    console.log(info);
     Layout.updating = true;
     info['cormorant'] = encodeURIComponent(item['url']);
     Detection.addInfo(id, info, itemType);
@@ -287,6 +291,11 @@ var Parser = {
                       async: false
                     });
                   },
+                  error: function(req, msg) {
+                    console.log('PROXY ERROR');
+                    console.log(msg);
+                    self.noJSON(url, item);
+                  },
                   async: false
                 });
               }
@@ -297,7 +306,8 @@ var Parser = {
       }
     } else { //non-hyperlocal
       SmartSpace.ids.push(id);
-      SmartSpace.addOccupant(self.refreshing, id, item, item);
+      console.log('NON HYPERLOCAL');
+      SmartSpace.addOccupant(self.refreshing, id, item, itemType);
       self.checkedItems.push(item);
     }
   },
