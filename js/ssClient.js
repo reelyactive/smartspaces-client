@@ -21,11 +21,16 @@ var SmartSpace = {
     self.setRefresher();
 
     console.log(self.jsonURL);
-    $.getJSON(self.jsonURL, function(data) {
-      console.log(data);
-      if (self.settings.showDetection) Detection.init(data);
-      Parser.parse(data);
-      if (!self.settings.showDetection) Layout.init();
+    $.ajax({
+        cache: false,
+        url: self.jsonURL,
+        dataType: 'json',
+        success: function(data) {
+          console.log(data);
+          if (self.settings.showDetection) Detection.init(data);
+          Parser.parse(data);
+          if (!self.settings.showDetection) Layout.init();
+        }
     });
   },
   
@@ -238,6 +243,7 @@ var Parser = {
           $.ajax({
             type: 'GET',
             url: url,
+            dataType: 'json',
             success: function(data, status, jqXHR) {
               var resType = jqXHR.getResponseHeader('content-type');
               console.log(resType);
