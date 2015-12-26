@@ -55,6 +55,7 @@ var ViewChanger = {
         if (Layout.placedObjectTypes.indexOf(Layout.view) < 0 || $('.person:visible:not(.placed)')) {
           console.log('Placing ' + Layout.view + ' view.');
           Layout.placeObjects();
+          $('.person:visible').css({opacity: 1});
         }
         Layout.switchSize();
         Connections.clear();

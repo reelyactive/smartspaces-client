@@ -18,6 +18,7 @@ var Layout = {
   updating: false,
   blurred: false,
   loading: false,
+  activated: false,
   firstInit: true,
   ambientCycler: null,
   
@@ -72,6 +73,7 @@ var Layout = {
     if (self.blurred) Motion.stop();
     
     self.updating = false;
+    self.activated = true;
   },
   
   newObjects: function() {

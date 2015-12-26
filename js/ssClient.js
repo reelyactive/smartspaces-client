@@ -111,8 +111,6 @@ var SmartSpace = {
   addOccupant: function(refreshing, id, info, item, itemType) {
     var self = this;
     if (!self.isNewOccupant(id, itemType) || itemType === undefined) return false;
-    console.log(itemType);
-    console.log(info);
     Layout.updating = true;
     info['cormorant'] = encodeURIComponent(item['url']);
     Detection.addInfo(id, info, itemType);
@@ -133,7 +131,8 @@ var SmartSpace = {
     
     Layout.setBackground();
     
-    if (Layout.overlayMode || Layout.hovering || Layout.mobile()) return false;
+    if (Layout.overlayMode || Layout.hovering || Layout.mobile() || !Layout.activated)
+      return false;
     
     console.log('Refreshing.');
     
@@ -246,7 +245,6 @@ var Parser = {
             url: url,
             success: function(data, status, jqXHR) {
               var resType = jqXHR.getResponseHeader('content-type');
-              console.log(resType);
               if (resType.indexOf('application/json') >= 0) {
                 jsonFound = true;
                 info = data;
@@ -306,7 +304,7 @@ var Parser = {
       }
     } else { //non-hyperlocal
       SmartSpace.ids.push(id);
-      console.log('NON HYPERLOCAL');
+      //console.log('NON HYPERLOCAL');
       SmartSpace.addOccupant(self.refreshing, id, item, itemType);
       self.checkedItems.push(item);
     }
@@ -340,7 +338,7 @@ var Parser = {
     var self = this;
     if (info['@graph']) { //JSON-LD
       $.each(info['@graph'], function() {
-        console.log(this);
+        //console.log(this);
         var type = this['@type'].split(':')[1].toLowerCase();
         if (type == 'product') type = 'device';
         var info = self.scanForAttributes(this);
