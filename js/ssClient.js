@@ -240,6 +240,7 @@ var Parser = {
         } else {
           var jsonFound = false;
           var info;
+          console.log('pre-ajax: ' + url);
           $.ajax({
             type: 'GET',
             url: url,
@@ -263,7 +264,11 @@ var Parser = {
                 self.noJSON(url, item);
               }
             },
-            error: function(req, msg) {
+            error: function(req, msg, errorThrown) {
+              if (errorThrown == 'Not Found') {
+                self.noJSON(url, item);
+                return false;
+              }
               if (msg == 'error') {
                 // last resort: try proxy
                 console.log('Trying proxy');
