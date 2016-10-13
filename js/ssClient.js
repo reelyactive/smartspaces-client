@@ -170,7 +170,9 @@ var Parser = {
     companyName: ['schema:worksFor'],
     companyTitle: ['schema:jobTitle'],
     model: ['schema:model'],
-    manufacturer: [{'schema:manufacturer': 'schema:name'}]
+    manufacturer: [{'schema:manufacturer': 'schema:name'}],
+    organization: ['schema:name'],
+    logoUrl: ['schema:logo']
   },
   
   socialNetworks: {
@@ -345,7 +347,7 @@ var Parser = {
       $.each(info['@graph'], function() {
         //console.log(this);
         var type = this['@type'].split(':')[1].toLowerCase();
-        if (type == 'product') type = 'device';
+        if ((type == 'product') || (type == 'organization')) type = 'device';
         var info = self.scanForAttributes(this);
         if (type == 'place') {
           Areas.addArea(id, info);

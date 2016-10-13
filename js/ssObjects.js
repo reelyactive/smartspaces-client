@@ -16,8 +16,8 @@ var Occupant = function (id, info, itemType, nearest) {
   var company = info.companyName;
   
   if (itemType == 'device') {
-    name = info.model;
-    company = info.manufacturer;
+    name = info.model || 'BLE Device';
+    company = info.manufacturer || info.organization;
   }
   
   $('.name', bubble).html(name);
@@ -34,6 +34,10 @@ var Occupant = function (id, info, itemType, nearest) {
   $.each(nearest, function(key, receiver) {
     bubble.addClass(receiver.device);
   });
+
+  if(info.portraitImageUrl == undefined) {
+    info.portraitImageUrl = info.logoUrl;
+  }
   
   if (info.portraitImageUrl != undefined) {
     bubble.css('background-image', 'url('+info.portraitImageUrl+')');
