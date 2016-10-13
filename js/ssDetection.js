@@ -325,6 +325,8 @@ var Detection = {
       var label = '';
       if (info.manufacturer == 'Unknown') {
         label = info.model;
+      } else if(info.hasOwnProperty('organization')) {
+        label = info.organization;
       } else {
         label = info.manufacturer + ' ' + info.model;
       }
